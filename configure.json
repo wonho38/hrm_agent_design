@@ -1,0 +1,13 @@
+{
+  "language": "en",
+  "llm": {
+    "provider": "bedrock"
+  },
+  "langsmith": {
+    "enabled": true,
+    "api_key": "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",
+    "project": "hrm-agent",
+    "endpoint": "https://api.smith.langchain.com"
+  }
+}
+
