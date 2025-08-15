@@ -6,7 +6,8 @@ openai>=1.0.0
 langchain-openai>=0.1.0
 
 # For Flask web application
-flask>=2.0.0 
+flask>=2.0.0
+flask-cors>=4.0.0 
  
 # to use the API of GAUSS LLM
 requests>=2.28.0

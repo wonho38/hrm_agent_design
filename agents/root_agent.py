@@ -25,7 +25,7 @@ class RootAgent:
     - LangSmith: use tracing context if LANGCHAIN_TRACING_V2 is enabled
     """
 
-    def __init__(self) -> None:
+    def __init__(self, provider_override: Optional[str] = None, provider_kwargs_override: Optional[Dict[str, Any]] = None) -> None:
         self.agents: Dict[str, Any] = {}
         self.tools: Dict[str, Tool] = {}
         self.mcp = MCPRegistry()
@@ -34,10 +34,12 @@ class RootAgent:
         self.config: Dict[str, Any] = self._load_config()
         self.default_language: str = self.config.get("language", "ko")
         llm_cfg: Dict[str, Any] = self.config.get("llm", {}) if isinstance(self.config.get("llm", {}), dict) else {}
-        provider: str = str(llm_cfg.get("provider", "openai"))
-        provider_kwargs: Dict[str, Any] = {
-            k: v for k, v in llm_cfg.items() if k in {"model", "api_key", "model_id", "region", "access_key", "secret_key"}
-        }
+        provider: str = str(provider_override or llm_cfg.get("provider", "openai"))
+        provider_kwargs: Dict[str, Any] = (
+            provider_kwargs_override
+            if isinstance(provider_kwargs_override, dict)
+            else {k: v for k, v in llm_cfg.items() if k in {"model", "api_key", "model_id", "region", "access_key", "secret_key"}}
+        )
 
         # Configure LangSmith tracing from config if present
         self._configure_langsmith()

@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRM AI Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .settings {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .setting-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        select:hover {
+            border-color: #007bff;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .generate-btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-left: 20px;
+        }
+
+        .generate-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .generate-btn:active {
+            transform: translateY(1px);
+        }
+
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .top-textboxes {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .bottom-textboxes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .textbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .textbox-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            resize: vertical;
+            background-color: #fafafa;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            background-color: white;
+        }
+
+        .readonly {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .button-container {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Formatted operation history styles */
+        .formatted-op-history {
+            line-height: 1.6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fafafa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .formatted-op-history:hover {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            background-color: white;
+        }
+
+        .op-history-title {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .op-history-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .op-history-item {
+            margin: 12px 0;
+            padding: 12px 15px;
+            border-radius: 6px;
+            position: relative;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+            transition: all 0.2s ease;
+        }
+
+        .op-history-item:hover {
+            background: #e9ecef;
+            transform: translateX(2px);
+        }
+
+        .op-history-item.conclusion {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .op-history-item.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .op-history-item.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .op-history-item.info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+
+        .op-history-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .op-history-text {
+            display: inline;
+        }
+
+        .op-history-text strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .op-history-text em {
+            color: #6c757d;
+            font-style: normal;
+            background: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .format-toggle-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .format-toggle-btn:hover {
+            opacity: 1;
+        }
+
+        /* Formatted diagnosis styles */
+        .formatted-diagnosis {
+            line-height: 1.6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fafafa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .formatted-diagnosis:hover {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+            background-color: white;
+        }
+
+        .diagnosis-title {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .diagnosis-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .diagnosis-item {
+            margin: 12px 0;
+            padding: 12px 15px;
+            border-radius: 6px;
+            position: relative;
+            border-left: 4px solid #28a745;
+            background: #f8f9fa;
+            transition: all 0.2s ease;
+        }
+
+        .diagnosis-item:hover {
+            background: #e9ecef;
+            transform: translateX(2px);
+        }
+
+        .diagnosis-item.normal {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .diagnosis-item.abnormal {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .diagnosis-item.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .diagnosis-item.info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+
+        .diagnosis-item.recommendation {
+            background: #e2e3ff;
+            border-left-color: #6f42c1;
+        }
+
+        .diagnosis-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .diagnosis-text {
+            display: inline;
+        }
+
+        .diagnosis-text strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .diagnosis-text em {
+            color: #6c757d;
+            font-style: normal;
+            background: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">HRM AI Agent</h1>
+            <div class="settings">
+                <div class="setting-group">
+                    <label class="setting-label">LLM:</label>
+                    <select id="llmSelect">
+                        <option value="aws">AWS</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="gauss">Gauss</option>
+                        <option value="gausso">Gausso</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Language:</label>
+                    <select id="languageSelect">
+                        <option value="ko">한국어</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">Product:</label>
+                <select id="productSelect">
+                    <option value="airconditioner">Airconditioner</option>
+                    <option value="refrigerator">Refrigerator</option>
+                    <option value="washer">Washer</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label class="control-label">ID:</label>
+                <select id="idSelect">
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <div class="button-container">
+                <button class="generate-btn" id="generateBtn" onclick="generateContent()">Generation</button>
+                <div class="spinner" id="loadingSpinner"></div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="top-textboxes">
+                <div class="textbox-group">
+                    <label class="textbox-label">Diagnosis Summarization</label>
+                    <textarea id="diagnosisSummarization" placeholder="AI가 생성한 진단 요약이 여기에 표시됩니다..."></textarea>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label">Op. History Summarization</label>
+                    <textarea id="opHistorySummarization" placeholder="AI가 생성한 운영 이력 요약이 여기에 표시됩니다..."></textarea>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label">User Guide</label>
+                    <textarea id="userGuide" placeholder="AI가 생성한 사용자 가이드가 여기에 표시됩니다..."></textarea>
+                </div>
+            </div>
+            <div class="bottom-textboxes">
+                <div class="textbox-group">
+                    <label class="textbox-label">Diagnosis Lists</label>
+                    <textarea id="diagnosisLists" class="readonly" readonly placeholder="선택된 제품의 진단 목록이 여기에 표시됩니다..."></textarea>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label">Operation History</label>
+                    <textarea id="operationHistory" class="readonly" readonly placeholder="선택된 제품의 운영 이력이 여기에 표시됩니다..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let jsonData = [];
+
+        // JSON 데이터 로드
+        async function loadJsonData() {
+            try {
+                const response = await fetch('/api/data');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                jsonData = await response.json();
+                console.log('JSON data loaded:', jsonData.length, 'items');
+                updateIdOptions();
+            } catch (error) {
+                console.error('Error loading JSON data:', error);
+                document.getElementById('idSelect').innerHTML = '<option value="">Error loading data</option>';
+            }
+        }
+
+        // ID 옵션 업데이트
+        function updateIdOptions() {
+            const productSelect = document.getElementById('productSelect');
+            const idSelect = document.getElementById('idSelect');
+            const selectedProduct = productSelect.value;
+            
+            // 선택된 제품에 해당하는 ID들 필터링
+            const filteredData = jsonData.filter(item => {
+                if (selectedProduct === 'airconditioner') {
+                    return item.id.startsWith('airconditioner_');
+                } else if (selectedProduct === 'refrigerator') {
+                    return item.id.startsWith('refrigerator_');
+                } else if (selectedProduct === 'washer') {
+                    return item.id.startsWith('washer_');
+                }
+                return false;
+            });
+
+            // ID 옵션 생성
+            idSelect.innerHTML = '';
+            if (filteredData.length > 0) {
+                filteredData.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.id;
+                    idSelect.appendChild(option);
+                });
+            } else {
+                // 해당 제품 타입의 데이터가 없는 경우
+                for (let i = 1; i <= 25; i++) {
+                    const option = document.createElement('option');
+                    const idNumber = String(i).padStart(3, '0');
+                    option.value = `${selectedProduct}_${idNumber}`;
+                    option.textContent = `${selectedProduct}_${idNumber}`;
+                    idSelect.appendChild(option);
+                }
+            }
+        }
+
+        // 제품 변경 시 ID 옵션 업데이트
+        document.getElementById('productSelect').addEventListener('change', updateIdOptions);
+
+        // 진단 요약 후처리 함수
+        function formatDiagnosisSummary(rawText) {
+            if (!rawText || rawText.trim() === '') return '';
+            
+            let lines = rawText.split('\n').filter(line => line.trim() !== '');
+            
+            // 첫 번째 줄에서 언어 키워드 제거 (운영 이력과 동일한 로직)
+            if (lines.length > 0) {
+                let processedLines = [];
+                
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    
+                    // 언어 키워드 패턴들
+                    const languagePatterns = [
+                        /^한국어[:：\s]*(.*)$/gi,
+                        /^영어[:：\s]*(.*)$/gi,
+                        /^English[:：\s]*(.*)$/gi,
+                        /^Korean[:：\s]*(.*)$/gi,
+                        /^한글[:：\s]*(.*)$/gi,
+                        /^korean[:：\s]*(.*)$/gi,
+                        /^english[:：\s]*(.*)$/gi,
+                        /^(한국어|영어|English|Korean|한글|korean|english)[:：\-\s]+(.+)$/gi,
+                        /^(한국어|영어|English|Korean|한글|korean|english)[:：\-\s]*$/gi
+                    ];
+                    
+                    let cleanedLine = line;
+                    let wasLanguageLine = false;
+                    
+                    for (const pattern of languagePatterns) {
+                        const match = cleanedLine.match(pattern);
+                        if (match) {
+                            if (match[1] && match[1].trim()) {
+                                cleanedLine = match[1].trim();
+                            } else if (match[2] && match[2].trim()) {
+                                cleanedLine = match[2].trim();
+                            } else {
+                                wasLanguageLine = true;
+                                break;
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (!wasLanguageLine && cleanedLine && cleanedLine.length > 0) {
+                        processedLines.push(cleanedLine);
+                    }
+                }
+                
+                lines = processedLines;
+            }
+            
+            let result = `
+                <div class="formatted-diagnosis">
+                    <h3 class="diagnosis-title">
+                        <span>🩺</span>
+                        <span>진단 분석 결과</span>
+                        <span style="margin-left: auto; font-size: 0.8em; color: #6c757d;">🔬</span>
+                    </h3>
+                    <ul class="diagnosis-list">
+            `;
+            
+            lines.forEach((line, index) => {
+                const trimmedLine = line.trim();
+                if (trimmedLine === '') return;
+                
+                let cssClass = '';
+                let icon = '🔹';
+                let processedLine = trimmedLine;
+                
+                // 번호가 있는 줄 처리 (1., 2., 3. 등)
+                const numberedMatch = processedLine.match(/^(\d+)\.\s*(.+)/);
+                let isNumbered = false;
+                let numberText = '';
+                
+                if (numberedMatch) {
+                    numberText = numberedMatch[1];
+                    processedLine = numberedMatch[2];
+                    isNumbered = true;
+                    
+                    // 번호가 있는 항목의 기본 스타일
+                    cssClass = 'info';
+                    icon = ''; // 번호가 있을 때는 아이콘 사용 안 함
+                }
+                
+                // 키워드 기반 분류 및 아이콘 설정
+                const lowerLine = processedLine.toLowerCase();
+                
+                // 번호가 없는 경우에만 키워드 기반 아이콘 설정
+                if (!isNumbered) {
+                    // 정상/정상 동작
+                    if (lowerLine.includes('정상') || lowerLine.includes('normal') || 
+                        lowerLine.includes('양호') || lowerLine.includes('good') ||
+                        lowerLine.includes('문제없음') || lowerLine.includes('정상 동작')) {
+                        cssClass = 'normal';
+                        icon = '✅';
+                        
+                    // 이상/오류/문제
+                    } else if (lowerLine.includes('이상') || lowerLine.includes('abnormal') || 
+                              lowerLine.includes('문제') || lowerLine.includes('오류') || 
+                              lowerLine.includes('error') || lowerLine.includes('fault') ||
+                              lowerLine.includes('고장') || lowerLine.includes('불량')) {
+                        cssClass = 'abnormal';
+                        icon = '🚨';
+                        
+                    // 권장사항/조치사항
+                    } else if (lowerLine.includes('권장') || lowerLine.includes('recommend') || 
+                              lowerLine.includes('조치') || lowerLine.includes('action') ||
+                              lowerLine.includes('개선') || lowerLine.includes('improve') ||
+                              lowerLine.includes('교체') || lowerLine.includes('청소') ||
+                              lowerLine.includes('점검') || lowerLine.includes('확인')) {
+                        cssClass = 'recommendation';
+                        icon = '💡';
+                        
+                    // 주의/경고
+                    } else if (lowerLine.includes('주의') || lowerLine.includes('warning') || 
+                              lowerLine.includes('경고') || lowerLine.includes('alert') ||
+                              lowerLine.includes('위험') || lowerLine.includes('risk')) {
+                        cssClass = 'warning';
+                        icon = '⚠️';
+                        
+                    // 필터 관련
+                    } else if (lowerLine.includes('필터') || lowerLine.includes('filter') ||
+                              lowerLine.includes('먼지') || lowerLine.includes('dust') ||
+                              lowerLine.includes('청소') || lowerLine.includes('clean')) {
+                        cssClass = 'recommendation';
+                        icon = '🧽';
+                        
+                    // 온도 관련
+                    } else if (lowerLine.includes('온도') || lowerLine.includes('temperature') ||
+                              lowerLine.includes('℃') || lowerLine.includes('°c') ||
+                              lowerLine.includes('냉각') || lowerLine.includes('냉방')) {
+                        cssClass = 'info';
+                        icon = '🌡️';
+                        
+                    // 소음 관련
+                    } else if (lowerLine.includes('소음') || lowerLine.includes('noise') ||
+                              lowerLine.includes('소리') || lowerLine.includes('sound')) {
+                        cssClass = 'warning';
+                        icon = '🔊';
+                        
+                    // 데이터/정보 관련
+                    } else if (lowerLine.includes('데이터') || lowerLine.includes('정보') || 
+                              lowerLine.includes('측정') || lowerLine.includes('기록') ||
+                              lowerLine.includes('data') || lowerLine.includes('info') ||
+                              lowerLine.includes('부족') || lowerLine.includes('insufficient')) {
+                        cssClass = 'info';
+                        icon = '📊';
+                    }
+                } else {
+                    // 번호가 있는 경우 키워드에 따라 배경색만 변경
+                    if (lowerLine.includes('정상') || lowerLine.includes('normal') || 
+                        lowerLine.includes('양호') || lowerLine.includes('good') ||
+                        lowerLine.includes('문제없음') || lowerLine.includes('정상 동작')) {
+                        cssClass = 'normal';
+                    } else if (lowerLine.includes('이상') || lowerLine.includes('abnormal') || 
+                              lowerLine.includes('문제') || lowerLine.includes('오류') || 
+                              lowerLine.includes('error') || lowerLine.includes('fault') ||
+                              lowerLine.includes('고장') || lowerLine.includes('불량')) {
+                        cssClass = 'abnormal';
+                    } else if (lowerLine.includes('권장') || lowerLine.includes('recommend') || 
+                              lowerLine.includes('조치') || lowerLine.includes('action') ||
+                              lowerLine.includes('개선') || lowerLine.includes('improve') ||
+                              lowerLine.includes('교체') || lowerLine.includes('청소') ||
+                              lowerLine.includes('점검') || lowerLine.includes('확인')) {
+                        cssClass = 'recommendation';
+                    } else if (lowerLine.includes('주의') || lowerLine.includes('warning') || 
+                              lowerLine.includes('경고') || lowerLine.includes('alert') ||
+                              lowerLine.includes('위험') || lowerLine.includes('risk')) {
+                        cssClass = 'warning';
+                    }
+                }
+                
+                // 텍스트 강조 처리
+                processedLine = processTextFormatting(processedLine);
+                
+                if (isNumbered) {
+                    // 번호가 있는 경우: 숫자를 강조하고 텍스트도 강조
+                    result += `
+                        <li class="diagnosis-item ${cssClass}">
+                            <span class="diagnosis-text">
+                                <strong style="color: #2c3e50; font-size: 1.1em;">${numberText}.</strong> 
+                                <strong>${processedLine}</strong>
+                            </span>
+                        </li>
+                    `;
+                } else {
+                    // 번호가 없는 경우: 기존 방식 (아이콘 사용)
+                    result += `
+                        <li class="diagnosis-item ${cssClass}">
+                            <span class="diagnosis-icon">${icon}</span>
+                            <span class="diagnosis-text">${processedLine}</span>
+                        </li>
+                    `;
+                }
+            });
+            
+            result += `
+                    </ul>
+                </div>
+            `;
+            
+            return result;
+        }
+
+        // 진단 포맷팅 적용 함수
+        function applyDiagnosisFormatting(textarea) {
+            const rawText = textarea.value;
+            if (!rawText || rawText.trim() === '') return;
+            
+            const parent = textarea.parentNode;
+            
+            // 기존 포맷된 요소들 제거
+            const existingFormatted = parent.querySelector('.formatted-diagnosis');
+            const existingToggle = parent.querySelector('.format-toggle-btn');
+            if (existingFormatted) existingFormatted.remove();
+            if (existingToggle) existingToggle.remove();
+            
+            // 포맷된 div 생성
+            const formattedDiv = document.createElement('div');
+            formattedDiv.innerHTML = formatDiagnosisSummary(rawText);
+            
+            // 토글 버튼 생성
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'format-toggle-btn';
+            toggleButton.textContent = '원본';
+            toggleButton.title = '원본 텍스트 보기/숨기기';
+            
+            // textarea 숨기고 포맷된 div와 버튼 추가
+            textarea.style.display = 'none';
+            parent.appendChild(formattedDiv);
+            parent.appendChild(toggleButton);
+            
+            // 토글 기능
+            let showingFormatted = true;
+            function toggleDisplay() {
+                if (showingFormatted) {
+                    textarea.style.display = 'block';
+                    formattedDiv.style.display = 'none';
+                    toggleButton.textContent = '포맷';
+                    toggleButton.title = '포맷된 보기로 전환';
+                    showingFormatted = false;
+                } else {
+                    textarea.style.display = 'none';
+                    formattedDiv.style.display = 'block';
+                    toggleButton.textContent = '원본';
+                    toggleButton.title = '원본 텍스트 보기로 전환';
+                    showingFormatted = true;
+                }
+            }
+            
+            toggleButton.addEventListener('click', toggleDisplay);
+            formattedDiv.addEventListener('dblclick', toggleDisplay);
+            
+            const formattedContent = formattedDiv.querySelector('.formatted-diagnosis');
+            if (formattedContent) {
+                formattedContent.title = '더블클릭하면 원본 텍스트를 볼 수 있습니다';
+            }
+        }
+
+        // 운영 이력 요약 후처리 함수
+        function formatOperationHistorySummary(rawText) {
+            if (!rawText || rawText.trim() === '') return '';
+            
+            // HTML 엔티티 이스케이프
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            let lines = rawText.split('\n').filter(line => line.trim() !== '');
+            
+            // 첫 번째 줄에서 언어 키워드 제거 (강화된 버전)
+            if (lines.length > 0) {
+                let processedLines = [];
+                
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    
+                    // 언어 키워드 패턴들 (더 포괄적)
+                    const languagePatterns = [
+                        /^한국어[:：\s]*(.*)$/gi,
+                        /^영어[:：\s]*(.*)$/gi,
+                        /^English[:：\s]*(.*)$/gi,
+                        /^Korean[:：\s]*(.*)$/gi,
+                        /^한글[:：\s]*(.*)$/gi,
+                        /^korean[:：\s]*(.*)$/gi,
+                        /^english[:：\s]*(.*)$/gi,
+                        // 줄 시작 부분의 언어 키워드
+                        /^(한국어|영어|English|Korean|한글|korean|english)[:：\-\s]+(.+)$/gi,
+                        // 줄 전체가 언어 키워드인 경우
+                        /^(한국어|영어|English|Korean|한글|korean|english)[:：\-\s]*$/gi
+                    ];
+                    
+                    let cleanedLine = line;
+                    let wasLanguageLine = false;
+                    
+                    // 각 패턴을 확인하여 언어 키워드 제거
+                    for (const pattern of languagePatterns) {
+                        const match = cleanedLine.match(pattern);
+                        if (match) {
+                            if (match[1] && match[1].trim()) {
+                                // 언어 키워드 뒤에 내용이 있으면 그 내용만 유지
+                                cleanedLine = match[1].trim();
+                            } else if (match[2] && match[2].trim()) {
+                                // 두 번째 캡처 그룹에 내용이 있으면 그것을 사용
+                                cleanedLine = match[2].trim();
+                            } else {
+                                // 언어 키워드만 있고 내용이 없으면 이 줄을 건너뜀
+                                wasLanguageLine = true;
+                                break;
+                            }
+                            break;
+                        }
+                    }
+                    
+                    // 유효한 내용이 있는 줄만 추가
+                    if (!wasLanguageLine && cleanedLine && cleanedLine.length > 0) {
+                        processedLines.push(cleanedLine);
+                    }
+                }
+                
+                lines = processedLines;
+            }
+            
+            let result = `
+                <div class="formatted-op-history">
+                    <h3 class="op-history-title">
+                        <span>🔍</span>
+                        <span>운영 이력 분석 결과</span>
+                        <span style="margin-left: auto; font-size: 0.8em; color: #6c757d;">📈</span>
+                    </h3>
+                    <ul class="op-history-list">
+            `;
+            
+            lines.forEach((line, index) => {
+                const trimmedLine = line.trim();
+                if (trimmedLine === '') return;
+                
+                let cssClass = '';
+                let icon = '▶';
+                let processedLine = trimmedLine;
+                
+                // 번호가 있는 줄 처리 (1., 2., 3. 등)
+                const numberedMatch = processedLine.match(/^(\d+)\.\s*(.+)/);
+                if (numberedMatch) {
+                    processedLine = numberedMatch[2];
+                    
+                    // 첫 번째 항목은 보통 결론
+                    if (numberedMatch[1] === '1') {
+                        cssClass = 'conclusion';
+                        icon = '✓';
+                    }
+                }
+                
+                // 키워드 기반 분류 및 아이콘 설정 (개선된 버전)
+                const lowerLine = processedLine.toLowerCase();
+                
+                // 정상/성공 상태
+                if (lowerLine.includes('정상') || lowerLine.includes('normal') || 
+                    lowerLine.includes('성공') || lowerLine.includes('완료') || 
+                    lowerLine.includes('양호') || lowerLine.includes('success')) {
+                    cssClass = 'conclusion';
+                    icon = '✅';
+                    
+                // 오류/문제 상태  
+                } else if (lowerLine.includes('이상') || lowerLine.includes('abnormal') || 
+                          lowerLine.includes('문제') || lowerLine.includes('오류') || 
+                          lowerLine.includes('error') || lowerLine.includes('fault') ||
+                          lowerLine.includes('실패') || lowerLine.includes('고장')) {
+                    cssClass = 'error';
+                    icon = '🚨';
+                    
+                // 경고/주의 상태
+                } else if (lowerLine.includes('주의') || lowerLine.includes('warning') || 
+                          lowerLine.includes('확인') || lowerLine.includes('점검') ||
+                          lowerLine.includes('권장') || lowerLine.includes('recommend') ||
+                          lowerLine.includes('알림') || lowerLine.includes('notice')) {
+                    cssClass = 'warning';
+                    icon = '⚠️';
+                    
+                // 온도 관련
+                } else if (lowerLine.includes('온도') || lowerLine.includes('temperature') ||
+                          lowerLine.includes('℃') || lowerLine.includes('°c') ||
+                          lowerLine.includes('열') || lowerLine.includes('냉각')) {
+                    cssClass = 'info';
+                    icon = '🌡️';
+                    
+                // 전력/에너지 관련
+                } else if (lowerLine.includes('전력') || lowerLine.includes('power') ||
+                          lowerLine.includes('에너지') || lowerLine.includes('energy') ||
+                          lowerLine.includes('kw') || lowerLine.includes('전기')) {
+                    cssClass = 'info';
+                    icon = '⚡';
+                    
+                // 시간/주기 관련
+                } else if (lowerLine.includes('시간') || lowerLine.includes('time') ||
+                          lowerLine.includes('주기') || lowerLine.includes('cycle') ||
+                          lowerLine.includes('분') || lowerLine.includes('초')) {
+                    cssClass = 'info';
+                    icon = '⏰';
+                    
+                // 데이터/정보 관련
+                } else if (lowerLine.includes('데이터') || lowerLine.includes('정보') || 
+                          lowerLine.includes('측정') || lowerLine.includes('기록') ||
+                          lowerLine.includes('data') || lowerLine.includes('info') ||
+                          lowerLine.includes('로그') || lowerLine.includes('기록')) {
+                    cssClass = 'info';
+                    icon = '📊';
+                    
+                // 부족/없음 상태
+                } else if (lowerLine.includes('부족') || lowerLine.includes('없음') ||
+                          lowerLine.includes('insufficient') || lowerLine.includes('lack') ||
+                          lowerLine.includes('missing') || lowerLine.includes('부재')) {
+                    cssClass = 'warning';
+                    icon = '📉';
+                    
+                // 기본 아이콘 (첫 번째 항목인 경우 특별 처리)
+                } else if (numberedMatch && numberedMatch[1] === '1') {
+                    cssClass = 'conclusion';
+                    icon = '🏁';
+                }
+                
+                // 텍스트 강조 처리
+                processedLine = processTextFormatting(processedLine);
+                
+                result += `
+                    <li class="op-history-item ${cssClass}">
+                        <span class="op-history-icon">${icon}</span>
+                        <span class="op-history-text">${processedLine}</span>
+                    </li>
+                `;
+            });
+            
+            result += `
+                    </ul>
+                </div>
+            `;
+            
+            return result;
+        }
+
+        // 텍스트 포맷팅 처리 (강조, 수치 등) - 개선된 버전
+        function processTextFormatting(text) {
+            let processed = escapeHtml(text);
+            
+            // 강조 텍스트 처리 (마크다운 스타일)
+            processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong style="color: #2c3e50;">$1</strong>');
+            processed = processed.replace(/\*(.+?)\*/g, '<em style="color: #6c757d; background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">$1</em>');
+            
+            // 수치와 단위 하이라이트 (더 포괄적)
+            processed = processed.replace(/(\d+(?:\.\d+)?)\s*(℃|°C|도|시간|분|초|%|Hz|rpm|kW|W|A|V|bar|Pa|L\/min|m³\/h|dB)/gi, 
+                '<strong style="color: #007bff; background: #e7f3ff; padding: 1px 4px; border-radius: 3px;">$1$2</strong>');
+            
+            // 날짜와 시간 강조
+            processed = processed.replace(/(\d{4}-\d{2}-\d{2}|\d{2}:\d{2}(?::\d{2})?)/g, 
+                '<em style="color: #17a2b8; background: #d1ecf1; padding: 1px 4px; border-radius: 3px;">$1</em>');
+            
+            // 상태 키워드 강조 (더 다양한 키워드)
+            processed = processed.replace(/(정상|이상|경고|오류|문제|성공|실패|완료|진행중|대기|Normal|Abnormal|Warning|Error|Success|Failed|Complete|Progress|Pending)/gi, 
+                function(match) {
+                    const lower = match.toLowerCase();
+                    let color = '#2c3e50';
+                    let bgColor = '#f8f9fa';
+                    
+                    if (lower.includes('정상') || lower.includes('normal') || lower.includes('성공') || lower.includes('success') || lower.includes('완료') || lower.includes('complete')) {
+                        color = '#28a745';
+                        bgColor = '#d4edda';
+                    } else if (lower.includes('이상') || lower.includes('abnormal') || lower.includes('오류') || lower.includes('error') || lower.includes('실패') || lower.includes('failed') || lower.includes('문제')) {
+                        color = '#dc3545';
+                        bgColor = '#f8d7da';
+                    } else if (lower.includes('경고') || lower.includes('warning') || lower.includes('주의')) {
+                        color = '#fd7e14';
+                        bgColor = '#fff3cd';
+                    }
+                    
+                    return `<strong style="color: ${color}; background: ${bgColor}; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${match}</strong>`;
+                });
+            
+            // 퍼센테이지 강조
+            processed = processed.replace(/(\d+(?:\.\d+)?%)/g, 
+                '<strong style="color: #6f42c1; background: #e7e3ff; padding: 1px 4px; border-radius: 3px;">$1</strong>');
+            
+            // 범위 표현 강조 (예: 20-25℃, 1-5분)
+            processed = processed.replace(/(\d+(?:\.\d+)?)\s*[-~]\s*(\d+(?:\.\d+)?)\s*([℃°CFmin초분시간])/gi,
+                '<strong style="color: #20c997; background: #d1f2eb; padding: 1px 4px; border-radius: 3px;">$1-$2$3</strong>');
+            
+            return processed;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 포맷팅 적용 함수
+        function applyOperationHistoryFormatting(textarea) {
+            const rawText = textarea.value;
+            if (!rawText || rawText.trim() === '') return;
+            
+            const parent = textarea.parentNode;
+            
+            // 기존 포맷된 요소들 제거
+            const existingFormatted = parent.querySelector('.formatted-op-history');
+            const existingToggle = parent.querySelector('.format-toggle-btn');
+            if (existingFormatted) existingFormatted.remove();
+            if (existingToggle) existingToggle.remove();
+            
+            // 포맷된 div 생성
+            const formattedDiv = document.createElement('div');
+            formattedDiv.innerHTML = formatOperationHistorySummary(rawText);
+            
+            // 토글 버튼 생성
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'format-toggle-btn';
+            toggleButton.textContent = '원본';
+            toggleButton.title = '원본 텍스트 보기/숨기기';
+            
+            // textarea 숨기고 포맷된 div와 버튼 추가
+            textarea.style.display = 'none';
+            parent.appendChild(formattedDiv);
+            parent.appendChild(toggleButton);
+            
+            // 토글 기능
+            let showingFormatted = true;
+            function toggleDisplay() {
+                if (showingFormatted) {
+                    // 원본 텍스트 표시
+                    textarea.style.display = 'block';
+                    formattedDiv.style.display = 'none';
+                    toggleButton.textContent = '포맷';
+                    toggleButton.title = '포맷된 보기로 전환';
+                    showingFormatted = false;
+                } else {
+                    // 포맷된 텍스트 표시
+                    textarea.style.display = 'none';
+                    formattedDiv.style.display = 'block';
+                    toggleButton.textContent = '원본';
+                    toggleButton.title = '원본 텍스트 보기로 전환';
+                    showingFormatted = true;
+                }
+            }
+            
+            // 이벤트 리스너 추가
+            toggleButton.addEventListener('click', toggleDisplay);
+            formattedDiv.addEventListener('dblclick', toggleDisplay);
+            
+            // 포맷된 div에 툴팁 추가
+            const formattedContent = formattedDiv.querySelector('.formatted-op-history');
+            if (formattedContent) {
+                formattedContent.title = '더블클릭하면 원본 텍스트를 볼 수 있습니다';
+            }
+        }
+
+        // 스트리밍 콘텐츠 생성
+        async function generateContent() {
+            const selectedId = document.getElementById('idSelect').value;
+            const selectedLlm = document.getElementById('llmSelect').value;
+            const selectedLanguage = document.getElementById('languageSelect').value;
+            
+            const diagnosisSummarizationTextarea = document.getElementById('diagnosisSummarization');
+            const opHistorySummarizationTextarea = document.getElementById('opHistorySummarization');
+            const diagnosisListsTextarea = document.getElementById('diagnosisLists');
+            const operationHistoryTextarea = document.getElementById('operationHistory');
+            
+            if (!selectedId) {
+                alert('ID를 선택해주세요.');
+                return;
+            }
+
+            // 로딩 상태 표시
+            const generateBtn = document.getElementById('generateBtn');
+            const spinner = document.getElementById('loadingSpinner');
+            
+            generateBtn.disabled = true;
+            spinner.style.display = 'block';
+            
+            // 텍스트 영역 초기화 및 기존 포맷 제거
+            diagnosisSummarizationTextarea.value = '';
+            opHistorySummarizationTextarea.value = '';
+            
+            // 기존 포맷된 디스플레이 제거
+            [diagnosisSummarizationTextarea, opHistorySummarizationTextarea].forEach(textarea => {
+                const parent = textarea.parentNode;
+                const existingFormattedOp = parent.querySelector('.formatted-op-history');
+                const existingFormattedDiag = parent.querySelector('.formatted-diagnosis');
+                const existingToggle = parent.querySelector('.format-toggle-btn');
+                if (existingFormattedOp) existingFormattedOp.remove();
+                if (existingFormattedDiag) existingFormattedDiag.remove();
+                if (existingToggle) existingToggle.remove();
+                textarea.style.display = 'block'; // 원본 textarea 다시 표시
+            });
+
+            try {
+                // 먼저 원본 데이터 로드 (JSON 형태로 표시)
+                await loadOriginalData(selectedId, diagnosisListsTextarea, operationHistoryTextarea);
+                
+                // 병렬로 두 개의 스트리밍 요청 시작
+                const diagnosisPromise = streamDiagnosis(selectedId, selectedLlm, selectedLanguage, diagnosisSummarizationTextarea);
+                const opHistoryPromise = streamOperationHistory(selectedId, selectedLlm, selectedLanguage, opHistorySummarizationTextarea);
+                
+                // 두 스트리밍이 모두 완료될 때까지 대기
+                await Promise.all([diagnosisPromise, opHistoryPromise]);
+                
+                // 스트리밍 완료 후 포맷팅 적용
+                setTimeout(() => {
+                    applyDiagnosisFormatting(diagnosisSummarizationTextarea);
+                    applyOperationHistoryFormatting(opHistorySummarizationTextarea);
+                }, 500); // 약간의 지연 후 포맷팅 적용
+
+            } catch (error) {
+                console.error('Error during content generation:', error);
+                diagnosisSummarizationTextarea.value = `Error: ${error.message}`;
+                opHistorySummarizationTextarea.value = `Error: ${error.message}`;
+            } finally {
+                // 로딩 상태 해제
+                generateBtn.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+
+        // 원본 데이터 로드 (기존 기능 유지)
+        async function loadOriginalData(selectedId, diagnosisTextarea, operationTextarea) {
+            try {
+                // 진단 데이터 가져오기
+                const diagnosisResponse = await fetch(`/api/diagnosis/${selectedId}`);
+                if (diagnosisResponse.ok) {
+                    const diagnosisData = await diagnosisResponse.json();
+                    diagnosisTextarea.value = JSON.stringify(diagnosisData, null, 2);
+                } else {
+                    diagnosisTextarea.value = 'No diagnosis data available for this item.';
+                }
+
+                // 운영 이력 데이터 가져오기
+                const operationResponse = await fetch(`/api/operation-history/${selectedId}`);
+                if (operationResponse.ok) {
+                    const contentType = operationResponse.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        // 일반 JSON 응답 (짧은 데이터)
+                        const operationData = await operationResponse.json();
+                        operationTextarea.value = JSON.stringify(operationData, null, 2);
+                    } else {
+                        // 잘린 텍스트 응답 (긴 데이터)
+                        const operationText = await operationResponse.text();
+                        operationTextarea.value = operationText;
+                    }
+                } else {
+                    operationTextarea.value = 'No operation history data available for this item.';
+                }
+            } catch (error) {
+                diagnosisTextarea.value = `Error loading data: ${error.message}`;
+                operationTextarea.value = `Error loading data: ${error.message}`;
+            }
+        }
+
+        // 진단 스트리밍
+        async function streamDiagnosis(itemId, llm, language, textarea) {
+            return new Promise((resolve, reject) => {
+                const url = `/api/stream/diagnosis/${itemId}?llm=${llm}&language=${language}`;
+                
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        
+                        function readStream() {
+                            reader.read().then(({ done, value }) => {
+                                if (done) {
+                                    resolve();
+                                    return;
+                                }
+                                
+                                const chunk = decoder.decode(value);
+                                const lines = chunk.split('\n');
+                                
+                                for (const line of lines) {
+                                    if (line.startsWith('data: ')) {
+                                        try {
+                                            const data = JSON.parse(line.slice(6));
+                                            if (data.error) {
+                                                textarea.value += `Error: ${data.error}`;
+                                                reject(new Error(data.error));
+                                                return;
+                                            }
+                                            if (data.chunk) {
+                                                textarea.value += data.chunk;
+                                            }
+                                            if (data.done) {
+                                                resolve();
+                                                return;
+                                            }
+                                        } catch (e) {
+                                            // JSON 파싱 오류 무시 (불완전한 데이터)
+                                        }
+                                    }
+                                }
+                                
+                                readStream();
+                            }).catch(reject);
+                        }
+                        
+                        readStream();
+                    })
+                    .catch(reject);
+            });
+        }
+
+        // 운영 이력 스트리밍
+        async function streamOperationHistory(itemId, llm, language, textarea) {
+            return new Promise((resolve, reject) => {
+                const url = `/api/stream/operation-history/${itemId}?llm=${llm}&language=${language}`;
+                
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        
+                        function readStream() {
+                            reader.read().then(({ done, value }) => {
+                                if (done) {
+                                    resolve();
+                                    return;
+                                }
+                                
+                                const chunk = decoder.decode(value);
+                                const lines = chunk.split('\n');
+                                
+                                for (const line of lines) {
+                                    if (line.startsWith('data: ')) {
+                                        try {
+                                            const data = JSON.parse(line.slice(6));
+                                            if (data.error) {
+                                                textarea.value += `Error: ${data.error}`;
+                                                reject(new Error(data.error));
+                                                return;
+                                            }
+                                            if (data.chunk) {
+                                                textarea.value += data.chunk;
+                                            }
+                                            if (data.done) {
+                                                resolve();
+                                                return;
+                                            }
+                                        } catch (e) {
+                                            // JSON 파싱 오류 무시 (불완전한 데이터)
+                                        }
+                                    }
+                                }
+                                
+                                readStream();
+                            }).catch(reject);
+                        }
+                        
+                        readStream();
+                    })
+                    .catch(reject);
+            });
+        }
+
+        // 페이지 로드 시 JSON 데이터 로드
+        window.addEventListener('load', loadJsonData);
+    </script>
+</body>
+</html>
