@@ -53,6 +53,11 @@ def index():
     """메인 페이지를 렌더링합니다."""
     return render_template('index.html')
 
+@app.route('/data-review')
+def data_review():
+    """데이터 리뷰 페이지를 렌더링합니다."""
+    return render_template('data_review.html')
+
 @app.route('/api/data')
 def get_all_data():
     """전체 JSON 데이터를 반환합니다."""

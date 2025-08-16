@@ -86,24 +86,86 @@ class RootAgent:
             return nullcontext()
 
     def run_diagnosis(self, analytics: Dict[str, Any], language: Optional[str] = None) -> Generator[str, None, None]:
+        from .guardrails import DiagnosisGuardrail
+        from .logger import log_event
+        
         agent: DiagnosisSummarizer = self.agents["diagnosis_summarizer"]
         lang = language or self.default_language
-        from .logger import log_event
         print(f"[RootAgent] run_diagnosis language={lang}")
         log_event({"stage": "run_diagnosis", "language": lang})
+        
+        # Initialize diagnosis guardrail
+        guardrail = DiagnosisGuardrail(include_readability_report=True)
+        
+        # Collect all chunks from the LLM
+        raw_output = ""
         with self._trace_ctx("diagnosis_summarizer"):
             for chunk in agent.summarize(analytics, language=lang, stream=True):
+                raw_output += chunk
                 yield chunk
+        
+        # Apply post-guardrail processing with readability analysis
+        try:
+            processed_output = guardrail.post_guard(raw_output)
+            
+            # If post_guard added content (readability report), yield the additional content
+            if len(processed_output) > len(raw_output):
+                additional_content = processed_output[len(raw_output):]
+                yield additional_content
+                log_event({"stage": "diagnosis_post_guard", "status": "readability_added"})
+                
+        except Exception as e:
+            print(f"[RootAgent] Diagnosis post-guardrail processing failed: {e}")
+            log_event({"stage": "diagnosis_post_guard", "status": "failed", "error": str(e)})
 
     def run_op_history(self, operation_history: Dict[str, Any], language: Optional[str] = None) -> Generator[str, None, None]:
-        agent: OperationHistorySummarizer = self.agents["op_history_summarizer"]
-        lang = language or self.default_language
+        from .guardrails import OperationHistoryGuardrail, GuardrailException
         from .logger import log_event
+        
+        lang = language or self.default_language
         print(f"[RootAgent] run_op_history language={lang}")
         log_event({"stage": "run_op_history", "language": lang})
+        
+        # Apply pre-guardrail validation
+        guardrail = OperationHistoryGuardrail()
+        try:
+            validated_data = guardrail.pre_guard(operation_history)
+            log_event({"stage": "op_history_guardrail", "status": "passed"})
+        except GuardrailException as e:
+            error_msg = str(e)
+            print(f"[RootAgent] Operation history guardrail failed: {error_msg}")
+            log_event({"stage": "op_history_guardrail", "status": "failed", "error": error_msg})
+            
+            # Return error message instead of calling LLM
+            if lang == "en":
+                yield "Insufficient data available. Unable to provide operation history analysis due to lack of adequate operation history data."
+            else:
+                yield error_msg
+            return
+        
+        # If validation passes, proceed with LLM processing
+        agent: OperationHistorySummarizer = self.agents["op_history_summarizer"]
+        
+        # Collect all chunks from the LLM
+        raw_output = ""
         with self._trace_ctx("op_history_summarizer"):
-            for chunk in agent.summarize(operation_history, language=lang, stream=True):
+            for chunk in agent.summarize(validated_data, language=lang, stream=True):
+                raw_output += chunk
                 yield chunk
+        
+        # Apply post-guardrail processing with readability analysis
+        try:
+            processed_output = guardrail.post_guard(raw_output)
+            
+            # If post_guard added content (readability report), yield the additional content
+            if len(processed_output) > len(raw_output):
+                additional_content = processed_output[len(raw_output):]
+                yield additional_content
+                log_event({"stage": "op_history_post_guard", "status": "readability_added"})
+                
+        except Exception as e:
+            print(f"[RootAgent] Post-guardrail processing failed: {e}")
+            log_event({"stage": "op_history_post_guard", "status": "failed", "error": str(e)})
 
     def run_guide(self, diagnosis_summary: str, op_summary: str, language: Optional[str] = None) -> Generator[str, None, None]:
         agent: GuideProvider = self.agents["guide_provider"]

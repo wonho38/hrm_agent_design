@@ -1,0 +1,24 @@
+# LangSmith Configuration for LLM Tracing
+# Sign up at https://smith.langchain.com/ to get your API key
+LANGCHAIN_API_KEY=your_langsmith_api_key_here
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_PROJECT=hrm-agent-llm-calls
+# LANGCHAIN_ENDPOINT=https://api.smith.langchain.com  # Optional: for custom instances
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o-mini
+
+# AWS Bedrock Configuration
+AWS_REGION=ap-northeast-2
+AWS_ACCESS_KEY_ID=your_aws_access_key_here
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key_here
+BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0
+
+# Gauss LLM Configuration
+GAUSS_ACCESS_KEY=your_gauss_access_key_here
+GAUSS_SECRET_KEY=your_gauss_secret_key_here
+
+# GaussO LLM Configuration
+GAUSSO_ACCESS_KEY=your_gausso_access_key_here
+GAUSSO_SECRET_KEY=your_gausso_secret_key_here

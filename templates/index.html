@@ -149,6 +149,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            align-items: stretch;
         }
 
         .textbox-label {
@@ -329,7 +330,7 @@
             opacity: 1;
         }
 
-        /* Formatted diagnosis styles */
+        /* Formatted diagnosis styles - 새로운 박스 형태 */
         .formatted-diagnosis {
             line-height: 1.6;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -349,84 +350,363 @@
 
         .diagnosis-title {
             color: #2c3e50;
-            margin: 0 0 15px 0;
-            font-size: 1.2em;
+            margin: 0 0 20px 0;
+            font-size: 1.3em;
             font-weight: 600;
             border-bottom: 2px solid #28a745;
-            padding-bottom: 8px;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+
+        /* 결론 스타일 */
+        .diagnosis-conclusion {
+            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .diagnosis-conclusion-label {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #155724;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .diagnosis-conclusion-content {
+            color: #155724;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        /* 진단 항목들 컨테이너 */
+        .diagnosis-items {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        /* 개별 진단 항목 */
+        .diagnosis-item {
+            display: flex;
+            align-items: flex-start;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid #28a745;
+            transition: all 0.2s ease;
+        }
+
+        .diagnosis-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateX(2px);
+        }
+
+        .diagnosis-item.normal {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #f8fff8 0%, #f0f8f0 100%);
+        }
+
+        .diagnosis-item.abnormal {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #fff8f8 0%, #f8f0f0 100%);
+        }
+
+        .diagnosis-item.warning {
+            border-left-color: #ffc107;
+            background: linear-gradient(135deg, #fffef8 0%, #faf8f0 100%);
+        }
+
+        .diagnosis-item.info {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, #f8feff 0%, #f0f8fa 100%);
+        }
+
+        .diagnosis-item.recommendation {
+            border-left-color: #6f42c1;
+            background: linear-gradient(135deg, #faf8ff 0%, #f5f0ff 100%);
+        }
+
+        /* 진단 항목 번호 */
+        .diagnosis-item-number {
+            background: #28a745;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .diagnosis-item.abnormal .diagnosis-item-number {
+            background: #dc3545;
+        }
+
+        .diagnosis-item.warning .diagnosis-item-number {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .diagnosis-item.info .diagnosis-item-number {
+            background: #17a2b8;
+        }
+
+        .diagnosis-item.recommendation .diagnosis-item-number {
+            background: #6f42c1;
+        }
+
+        /* 진단 항목 내용 */
+        .diagnosis-item-content {
+            flex: 1;
+            color: #2c3e50;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        /* 진단 메인 내용 */
+        .diagnosis-main-content {
+            margin-bottom: 8px;
+        }
+
+        /* 진단 하위 항목들 */
+        .diagnosis-sub-items {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+            list-style: none;
+        }
+
+        .diagnosis-sub-item {
+            position: relative;
+            margin: 4px 0;
+            padding-left: 15px;
+            color: #495057;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .diagnosis-sub-item::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #6c757d;
+            font-weight: bold;
+        }
+
+        .diagnosis-sub-item:hover {
+            color: #2c3e50;
+        }
+
+        /* 기타 항목들 */
+        .diagnosis-other-items {
+            display: grid;
+            gap: 10px;
+        }
+
+        .diagnosis-other-item {
+            background: white;
+            border-radius: 6px;
+            padding: 12px 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-left: 3px solid #6c757d;
+            transition: all 0.2s ease;
+        }
+
+        .diagnosis-other-item:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transform: translateX(1px);
+        }
+
+        .diagnosis-other-item.normal {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #f8fff8 0%, #f0f8f0 100%);
+        }
+
+        .diagnosis-other-item.abnormal {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #fff8f8 0%, #f8f0f0 100%);
+        }
+
+        .diagnosis-other-item.warning {
+            border-left-color: #ffc107;
+            background: linear-gradient(135deg, #fffef8 0%, #faf8f0 100%);
+        }
+
+        .diagnosis-other-item.info {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, #f8feff 0%, #f0f8fa 100%);
+        }
+
+        .diagnosis-other-item.recommendation {
+            border-left-color: #6f42c1;
+            background: linear-gradient(135deg, #faf8ff 0%, #f5f0ff 100%);
+        }
+
+        .diagnosis-other-content {
+            color: #2c3e50;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        /* Readability Report Styles */
+        .readability-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 100%;
+            box-sizing: border-box;
+            order: 10; /* 가독성 섹션을 가장 아래로 */
+        }
+
+        .readability-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .readability-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #495057;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .diagnosis-list {
-            margin: 0;
-            padding: 0;
-            list-style: none;
+        .readability-toggle {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
         }
 
-        .diagnosis-item {
-            margin: 12px 0;
-            padding: 12px 15px;
+        .readability-toggle:hover {
+            background: #0056b3;
+        }
+
+        .readability-content {
+            line-height: 1.6;
+        }
+
+        .readability-overall {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
             border-radius: 6px;
-            position: relative;
-            border-left: 4px solid #28a745;
-            background: #f8f9fa;
-            transition: all 0.2s ease;
-        }
-
-        .diagnosis-item:hover {
-            background: #e9ecef;
-            transform: translateX(2px);
-        }
-
-        .diagnosis-item.normal {
-            background: #d4edda;
-            border-left-color: #28a745;
-        }
-
-        .diagnosis-item.abnormal {
-            background: #f8d7da;
-            border-left-color: #dc3545;
-        }
-
-        .diagnosis-item.warning {
-            background: #fff3cd;
-            border-left-color: #ffc107;
-        }
-
-        .diagnosis-item.info {
-            background: #d1ecf1;
-            border-left-color: #17a2b8;
-        }
-
-        .diagnosis-item.recommendation {
-            background: #e2e3ff;
-            border-left-color: #6f42c1;
-        }
-
-        .diagnosis-icon {
-            display: inline-block;
-            margin-right: 8px;
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-
-        .diagnosis-text {
-            display: inline;
-        }
-
-        .diagnosis-text strong {
-            color: #2c3e50;
             font-weight: 600;
         }
 
-        .diagnosis-text em {
+        .readability-overall.good {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .readability-overall.poor {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .readability-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .readability-metric {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .readability-metric .icon {
+            font-size: 1.1em;
+        }
+
+        .readability-terms {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .readability-terms-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .readability-terms-list {
             color: #6c757d;
-            font-style: normal;
-            background: #e9ecef;
-            padding: 2px 4px;
-            border-radius: 3px;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        .readability-recommendations {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .readability-recommendations-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .readability-recommendations ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #856404;
+        }
+
+        .readability-recommendations li {
+            margin-bottom: 4px;
+            font-size: 0.9em;
+        }
+
+        .readability-collapsed {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .readability-metrics {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -564,13 +844,13 @@
         // 제품 변경 시 ID 옵션 업데이트
         document.getElementById('productSelect').addEventListener('change', updateIdOptions);
 
-        // 진단 요약 후처리 함수
+        // 진단 요약 후처리 함수 (아이콘 없는 박스 형태)
         function formatDiagnosisSummary(rawText) {
             if (!rawText || rawText.trim() === '') return '';
             
             let lines = rawText.split('\n').filter(line => line.trim() !== '');
             
-            // 첫 번째 줄에서 언어 키워드 제거 (운영 이력과 동일한 로직)
+            // 첫 번째 줄에서 언어 키워드 제거
             if (lines.length > 0) {
                 let processedLines = [];
                 
@@ -616,157 +896,174 @@
                 lines = processedLines;
             }
             
+            // 결론 부분과 번호가 있는 항목들 분리
+            let conclusionLine = '';
+            let numberedItems = [];
+            let otherItems = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const trimmedLine = lines[i].trim();
+                if (trimmedLine === '') continue;
+                
+                // 번호가 있는 줄 찾기 (1., 2., 3. 등)
+                const numberedMatch = trimmedLine.match(/^(\d+)\.\s*(.+)/);
+                if (numberedMatch) {
+                    // 번호가 있는 항목 생성
+                    const item = {
+                        number: numberedMatch[1],
+                        content: numberedMatch[2],
+                        subItems: []
+                    };
+                    
+                    // 다음 줄들에서 하이픈으로 시작하는 관련 내용 찾기
+                    let j = i + 1;
+                    while (j < lines.length) {
+                        const nextLine = lines[j].trim();
+                        if (nextLine === '') {
+                            j++;
+                            continue;
+                        }
+                        
+                        // 하이픈으로 시작하는 줄이거나 들여쓰기된 줄
+                        if (nextLine.match(/^[-–—•]\s*(.+)/) || nextLine.match(/^\s+[-–—•]\s*(.+)/) || 
+                            (nextLine.match(/^\s{2,}(.+)/) && !nextLine.match(/^\d+\.\s/))) {
+                            item.subItems.push(nextLine);
+                            j++;
+                        } else if (nextLine.match(/^\d+\.\s/)) {
+                            // 다음 번호 항목을 만나면 중단
+                            break;
+                        } else {
+                            // 일반 텍스트지만 번호 항목이 아니면 하위 항목으로 포함
+                            item.subItems.push(nextLine);
+                            j++;
+                        }
+                    }
+                    
+                    numberedItems.push(item);
+                    i = j - 1; // 처리한 줄들 건너뛰기
+                } else if (i === 0 && !numberedMatch) {
+                    // 첫 번째 줄이 번호가 없으면 결론으로 처리
+                    conclusionLine = trimmedLine;
+                } else {
+                    // 그 외 항목들 (번호 항목에 포함되지 않은 경우만)
+                    let isPartOfNumberedItem = false;
+                    
+                    // 이미 번호 항목에 포함되었는지 확인
+                    for (let item of numberedItems) {
+                        if (item.subItems.includes(trimmedLine)) {
+                            isPartOfNumberedItem = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!isPartOfNumberedItem) {
+                        otherItems.push(trimmedLine);
+                    }
+                }
+            }
+            
             let result = `
                 <div class="formatted-diagnosis">
                     <h3 class="diagnosis-title">
-                        <span>🩺</span>
                         <span>진단 분석 결과</span>
-                        <span style="margin-left: auto; font-size: 0.8em; color: #6c757d;">🔬</span>
                     </h3>
-                    <ul class="diagnosis-list">
             `;
             
-            lines.forEach((line, index) => {
-                const trimmedLine = line.trim();
-                if (trimmedLine === '') return;
+            // 결론 부분 표시
+            if (conclusionLine) {
+                const processedConclusion = processTextFormatting(conclusionLine);
+                result += `
+                    <div class="diagnosis-conclusion">
+                        <div class="diagnosis-conclusion-label">결론</div>
+                        <div class="diagnosis-conclusion-content">${processedConclusion}</div>
+                    </div>
+                `;
+            }
+            
+            // 번호가 있는 항목들 표시
+            if (numberedItems.length > 0) {
+                result += `<div class="diagnosis-items">`;
                 
-                let cssClass = '';
-                let icon = '🔹';
-                let processedLine = trimmedLine;
-                
-                // 번호가 있는 줄 처리 (1., 2., 3. 등)
-                const numberedMatch = processedLine.match(/^(\d+)\.\s*(.+)/);
-                let isNumbered = false;
-                let numberText = '';
-                
-                if (numberedMatch) {
-                    numberText = numberedMatch[1];
-                    processedLine = numberedMatch[2];
-                    isNumbered = true;
+                numberedItems.forEach(item => {
+                    const processedContent = processTextFormatting(item.content);
+                    let cssClass = getDiagnosisItemClass(item.content);
                     
-                    // 번호가 있는 항목의 기본 스타일
-                    cssClass = 'info';
-                    icon = ''; // 번호가 있을 때는 아이콘 사용 안 함
-                }
-                
-                // 키워드 기반 분류 및 아이콘 설정
-                const lowerLine = processedLine.toLowerCase();
-                
-                // 번호가 없는 경우에만 키워드 기반 아이콘 설정
-                if (!isNumbered) {
-                    // 정상/정상 동작
-                    if (lowerLine.includes('정상') || lowerLine.includes('normal') || 
-                        lowerLine.includes('양호') || lowerLine.includes('good') ||
-                        lowerLine.includes('문제없음') || lowerLine.includes('정상 동작')) {
-                        cssClass = 'normal';
-                        icon = '✅';
-                        
-                    // 이상/오류/문제
-                    } else if (lowerLine.includes('이상') || lowerLine.includes('abnormal') || 
-                              lowerLine.includes('문제') || lowerLine.includes('오류') || 
-                              lowerLine.includes('error') || lowerLine.includes('fault') ||
-                              lowerLine.includes('고장') || lowerLine.includes('불량')) {
-                        cssClass = 'abnormal';
-                        icon = '🚨';
-                        
-                    // 권장사항/조치사항
-                    } else if (lowerLine.includes('권장') || lowerLine.includes('recommend') || 
-                              lowerLine.includes('조치') || lowerLine.includes('action') ||
-                              lowerLine.includes('개선') || lowerLine.includes('improve') ||
-                              lowerLine.includes('교체') || lowerLine.includes('청소') ||
-                              lowerLine.includes('점검') || lowerLine.includes('확인')) {
-                        cssClass = 'recommendation';
-                        icon = '💡';
-                        
-                    // 주의/경고
-                    } else if (lowerLine.includes('주의') || lowerLine.includes('warning') || 
-                              lowerLine.includes('경고') || lowerLine.includes('alert') ||
-                              lowerLine.includes('위험') || lowerLine.includes('risk')) {
-                        cssClass = 'warning';
-                        icon = '⚠️';
-                        
-                    // 필터 관련
-                    } else if (lowerLine.includes('필터') || lowerLine.includes('filter') ||
-                              lowerLine.includes('먼지') || lowerLine.includes('dust') ||
-                              lowerLine.includes('청소') || lowerLine.includes('clean')) {
-                        cssClass = 'recommendation';
-                        icon = '🧽';
-                        
-                    // 온도 관련
-                    } else if (lowerLine.includes('온도') || lowerLine.includes('temperature') ||
-                              lowerLine.includes('℃') || lowerLine.includes('°c') ||
-                              lowerLine.includes('냉각') || lowerLine.includes('냉방')) {
-                        cssClass = 'info';
-                        icon = '🌡️';
-                        
-                    // 소음 관련
-                    } else if (lowerLine.includes('소음') || lowerLine.includes('noise') ||
-                              lowerLine.includes('소리') || lowerLine.includes('sound')) {
-                        cssClass = 'warning';
-                        icon = '🔊';
-                        
-                    // 데이터/정보 관련
-                    } else if (lowerLine.includes('데이터') || lowerLine.includes('정보') || 
-                              lowerLine.includes('측정') || lowerLine.includes('기록') ||
-                              lowerLine.includes('data') || lowerLine.includes('info') ||
-                              lowerLine.includes('부족') || lowerLine.includes('insufficient')) {
-                        cssClass = 'info';
-                        icon = '📊';
+                    // 하위 항목들 처리
+                    let subItemsHtml = '';
+                    if (item.subItems && item.subItems.length > 0) {
+                        subItemsHtml = '<ul class="diagnosis-sub-items">';
+                        item.subItems.forEach(subItem => {
+                            const processedSubItem = processTextFormatting(subItem);
+                            // 하이픈이나 불릿 포인트 제거하고 정리
+                            const cleanSubItem = processedSubItem.replace(/^[-–—•]\s*/, '').replace(/^\s+[-–—•]\s*/, '').trim();
+                            subItemsHtml += `<li class="diagnosis-sub-item">${cleanSubItem}</li>`;
+                        });
+                        subItemsHtml += '</ul>';
                     }
-                } else {
-                    // 번호가 있는 경우 키워드에 따라 배경색만 변경
-                    if (lowerLine.includes('정상') || lowerLine.includes('normal') || 
-                        lowerLine.includes('양호') || lowerLine.includes('good') ||
-                        lowerLine.includes('문제없음') || lowerLine.includes('정상 동작')) {
-                        cssClass = 'normal';
-                    } else if (lowerLine.includes('이상') || lowerLine.includes('abnormal') || 
-                              lowerLine.includes('문제') || lowerLine.includes('오류') || 
-                              lowerLine.includes('error') || lowerLine.includes('fault') ||
-                              lowerLine.includes('고장') || lowerLine.includes('불량')) {
-                        cssClass = 'abnormal';
-                    } else if (lowerLine.includes('권장') || lowerLine.includes('recommend') || 
-                              lowerLine.includes('조치') || lowerLine.includes('action') ||
-                              lowerLine.includes('개선') || lowerLine.includes('improve') ||
-                              lowerLine.includes('교체') || lowerLine.includes('청소') ||
-                              lowerLine.includes('점검') || lowerLine.includes('확인')) {
-                        cssClass = 'recommendation';
-                    } else if (lowerLine.includes('주의') || lowerLine.includes('warning') || 
-                              lowerLine.includes('경고') || lowerLine.includes('alert') ||
-                              lowerLine.includes('위험') || lowerLine.includes('risk')) {
-                        cssClass = 'warning';
-                    }
-                }
-                
-                // 텍스트 강조 처리
-                processedLine = processTextFormatting(processedLine);
-                
-                if (isNumbered) {
-                    // 번호가 있는 경우: 숫자를 강조하고 텍스트도 강조
+                    
                     result += `
-                        <li class="diagnosis-item ${cssClass}">
-                            <span class="diagnosis-text">
-                                <strong style="color: #2c3e50; font-size: 1.1em;">${numberText}.</strong> 
-                                <strong>${processedLine}</strong>
-                            </span>
-                        </li>
+                        <div class="diagnosis-item ${cssClass}">
+                            <div class="diagnosis-item-number">${item.number}</div>
+                            <div class="diagnosis-item-content">
+                                <div class="diagnosis-main-content">${processedContent}</div>
+                                ${subItemsHtml}
+                            </div>
+                        </div>
                     `;
-                } else {
-                    // 번호가 없는 경우: 기존 방식 (아이콘 사용)
-                    result += `
-                        <li class="diagnosis-item ${cssClass}">
-                            <span class="diagnosis-icon">${icon}</span>
-                            <span class="diagnosis-text">${processedLine}</span>
-                        </li>
-                    `;
-                }
-            });
+                });
+                
+                result += `</div>`;
+            }
             
-            result += `
-                    </ul>
-                </div>
-            `;
+            // 기타 항목들 표시
+            if (otherItems.length > 0) {
+                result += `<div class="diagnosis-other-items">`;
+                
+                otherItems.forEach(item => {
+                    const processedContent = processTextFormatting(item);
+                    let cssClass = getDiagnosisItemClass(item);
+                    
+                    result += `
+                        <div class="diagnosis-other-item ${cssClass}">
+                            <div class="diagnosis-other-content">${processedContent}</div>
+                        </div>
+                    `;
+                });
+                
+                result += `</div>`;
+            }
+            
+            result += `</div>`;
             
             return result;
+        }
+        
+        // 진단 항목의 CSS 클래스 결정 (키워드 기반)
+        function getDiagnosisItemClass(content) {
+            const lowerContent = content.toLowerCase();
+            
+            if (lowerContent.includes('정상') || lowerContent.includes('normal') || 
+                lowerContent.includes('양호') || lowerContent.includes('good') ||
+                lowerContent.includes('문제없음') || lowerContent.includes('정상 동작')) {
+                return 'normal';
+            } else if (lowerContent.includes('이상') || lowerContent.includes('abnormal') || 
+                      lowerContent.includes('문제') || lowerContent.includes('오류') || 
+                      lowerContent.includes('error') || lowerContent.includes('fault') ||
+                      lowerContent.includes('고장') || lowerContent.includes('불량')) {
+                return 'abnormal';
+            } else if (lowerContent.includes('권장') || lowerContent.includes('recommend') || 
+                      lowerContent.includes('조치') || lowerContent.includes('action') ||
+                      lowerContent.includes('개선') || lowerContent.includes('improve') ||
+                      lowerContent.includes('교체') || lowerContent.includes('청소') ||
+                      lowerContent.includes('점검') || lowerContent.includes('확인')) {
+                return 'recommendation';
+            } else if (lowerContent.includes('주의') || lowerContent.includes('warning') || 
+                      lowerContent.includes('경고') || lowerContent.includes('alert') ||
+                      lowerContent.includes('위험') || lowerContent.includes('risk')) {
+                return 'warning';
+            } else {
+                return 'info';
+            }
         }
 
         // 진단 포맷팅 적용 함수
@@ -776,7 +1073,7 @@
             
             const parent = textarea.parentNode;
             
-            // 기존 포맷된 요소들 제거
+            // 기존 포맷된 요소들 제거 (가독성 섹션은 유지)
             const existingFormatted = parent.querySelector('.formatted-diagnosis');
             const existingToggle = parent.querySelector('.format-toggle-btn');
             if (existingFormatted) existingFormatted.remove();
@@ -792,10 +1089,20 @@
             toggleButton.textContent = '원본';
             toggleButton.title = '원본 텍스트 보기/숨기기';
             
+            // 가독성 섹션이 있는지 확인
+            const readabilitySection = parent.querySelector('.readability-section');
+            
             // textarea 숨기고 포맷된 div와 버튼 추가
             textarea.style.display = 'none';
-            parent.appendChild(formattedDiv);
-            parent.appendChild(toggleButton);
+            
+            // 가독성 섹션이 있으면 그 앞에 추가, 없으면 맨 뒤에 추가
+            if (readabilitySection) {
+                parent.insertBefore(formattedDiv, readabilitySection);
+                parent.insertBefore(toggleButton, readabilitySection);
+            } else {
+                parent.appendChild(formattedDiv);
+                parent.appendChild(toggleButton);
+            }
             
             // 토글 기능
             let showingFormatted = true;
@@ -1153,9 +1460,11 @@
                 const existingFormattedOp = parent.querySelector('.formatted-op-history');
                 const existingFormattedDiag = parent.querySelector('.formatted-diagnosis');
                 const existingToggle = parent.querySelector('.format-toggle-btn');
+                const existingReadability = parent.querySelector('.readability-section');
                 if (existingFormattedOp) existingFormattedOp.remove();
                 if (existingFormattedDiag) existingFormattedDiag.remove();
                 if (existingToggle) existingToggle.remove();
+                if (existingReadability) existingReadability.remove(); // 기존 가독성 섹션도 제거
                 textarea.style.display = 'block'; // 원본 textarea 다시 표시
             });
 
@@ -1170,7 +1479,7 @@
                 // 두 스트리밍이 모두 완료될 때까지 대기
                 await Promise.all([diagnosisPromise, opHistoryPromise]);
                 
-                // 스트리밍 완료 후 포맷팅 적용
+                // 스트리밍 완료 후 포맷팅 적용 (진단과 운영 이력 모두)
                 setTimeout(() => {
                     applyDiagnosisFormatting(diagnosisSummarizationTextarea);
                     applyOperationHistoryFormatting(opHistorySummarizationTextarea);
@@ -1238,6 +1547,8 @@
                         function readStream() {
                             reader.read().then(({ done, value }) => {
                                 if (done) {
+                                    // 스트리밍 완료 후 가독성 보고서 처리
+                                    processReadabilityReport(textarea);
                                     resolve();
                                     return;
                                 }
@@ -1258,6 +1569,8 @@
                                                 textarea.value += data.chunk;
                                             }
                                             if (data.done) {
+                                                // 스트리밍 완료 후 가독성 보고서 처리
+                                                processReadabilityReport(textarea);
                                                 resolve();
                                                 return;
                                             }
@@ -1294,6 +1607,8 @@
                         function readStream() {
                             reader.read().then(({ done, value }) => {
                                 if (done) {
+                                    // 스트리밍 완료 후 가독성 보고서 처리
+                                    processReadabilityReport(textarea);
                                     resolve();
                                     return;
                                 }
@@ -1314,6 +1629,8 @@
                                                 textarea.value += data.chunk;
                                             }
                                             if (data.done) {
+                                                // 스트리밍 완료 후 가독성 보고서 처리
+                                                processReadabilityReport(textarea);
                                                 resolve();
                                                 return;
                                             }
@@ -1331,6 +1648,228 @@
                     })
                     .catch(reject);
             });
+        }
+
+        // 가독성 보고서 처리 함수
+        function processReadabilityReport(textarea) {
+            const content = textarea.value;
+            
+            // 가독성 분석 결과 섹션 찾기
+            const reportStartIndex = content.indexOf('📊 **가독성 분석 결과**');
+            if (reportStartIndex === -1) {
+                return; // 가독성 보고서가 없으면 처리하지 않음
+            }
+            
+            // 원본 내용과 가독성 보고서 분리
+            const originalContent = content.substring(0, reportStartIndex).trim();
+            const reportContent = content.substring(reportStartIndex).trim();
+            
+            // 가독성 보고서 파싱
+            const readabilityData = parseReadabilityReport(reportContent);
+            
+            // 원본 내용만 textarea에 유지
+            textarea.value = originalContent;
+            
+            // 가독성 섹션 생성 및 표시
+            createReadabilitySection(textarea, readabilityData);
+        }
+
+        function parseReadabilityReport(reportText) {
+            const data = {
+                overall: 'unknown',
+                metrics: {},
+                technicalTerms: [],
+                recommendations: []
+            };
+            
+            try {
+                // 종합 평가 파싱
+                const overallMatch = reportText.match(/🎯 \*\*종합 평가\*\*: (✅|❌) (양호|개선 필요)/);
+                if (overallMatch) {
+                    data.overall = overallMatch[2] === '양호' ? 'good' : 'poor';
+                }
+                
+                // 세부 분석 파싱
+                const metricsSection = reportText.match(/📋 \*\*세부 분석\*\*:([\s\S]*?)(?=🔍|\💡|$)/);
+                if (metricsSection) {
+                    const metricsText = metricsSection[1];
+                    
+                    // 개조식 형태
+                    const bulletMatch = metricsText.match(/• 개조식 형태: (✅|❌) (\d+)개 항목 \((양호|개선 필요)\)/);
+                    if (bulletMatch) {
+                        data.metrics.bullet = {
+                            icon: bulletMatch[1],
+                            count: parseInt(bulletMatch[2]),
+                            status: bulletMatch[3]
+                        };
+                    }
+                    
+                    // 단어 수
+                    const wordMatch = metricsText.match(/• 단어 수: (✅|❌) (\d+)개 단어 \((양호|개선 필요)\)/);
+                    if (wordMatch) {
+                        data.metrics.words = {
+                            icon: wordMatch[1],
+                            count: parseInt(wordMatch[2]),
+                            status: wordMatch[3]
+                        };
+                    }
+                    
+                    // 용어 난이도
+                    const termsMatch = metricsText.match(/• 용어 난이도: (✅|❌) 전문용어 ([\d.]+)% \((양호|개선 필요)\)/);
+                    if (termsMatch) {
+                        data.metrics.terms = {
+                            icon: termsMatch[1],
+                            ratio: parseFloat(termsMatch[2]),
+                            status: termsMatch[3]
+                        };
+                    }
+                    
+                    // 가독성 점수
+                    const scoreMatch = metricsText.match(/• 가독성 점수: (✅|❌) FK (\d+)점 \((양호|개선 필요)\)/);
+                    if (scoreMatch) {
+                        data.metrics.score = {
+                            icon: scoreMatch[1],
+                            value: parseInt(scoreMatch[2]),
+                            status: scoreMatch[3]
+                        };
+                    }
+                }
+                
+                // 발견된 전문용어 파싱
+                const termsMatch = reportText.match(/🔍 \*\*발견된 전문용어\*\*: (.+)/);
+                if (termsMatch) {
+                    data.technicalTerms = termsMatch[1].split(', ').map(term => term.trim());
+                }
+                
+                // 개선 권장사항 파싱
+                const recommendationsMatch = reportText.match(/💡 \*\*개선 권장사항\*\*:([\s\S]*?)$/);
+                if (recommendationsMatch) {
+                    const recommendationsText = recommendationsMatch[1];
+                    const recommendations = recommendationsText.match(/• ([^\n]+)/g);
+                    if (recommendations) {
+                        data.recommendations = recommendations.map(rec => rec.replace('• ', '').trim());
+                    }
+                }
+                
+            } catch (error) {
+                console.error('가독성 보고서 파싱 오류:', error);
+            }
+            
+            return data;
+        }
+
+        function createReadabilitySection(textarea, data) {
+            const parent = textarea.parentNode; // textbox-group
+            
+            // 기존 가독성 섹션 제거
+            const existingSection = parent.querySelector('.readability-section');
+            if (existingSection) {
+                existingSection.remove();
+            }
+            
+            // 새 가독성 섹션 생성
+            const section = document.createElement('div');
+            section.className = 'readability-section';
+            section.style.marginTop = '15px'; // textarea와 간격 확보
+            
+            const overallClass = data.overall === 'good' ? 'good' : 'poor';
+            const overallText = data.overall === 'good' ? '양호' : '개선 필요';
+            const overallIcon = data.overall === 'good' ? '✅' : '❌';
+            
+            let metricsHtml = '';
+            if (data.metrics.bullet) {
+                metricsHtml += `
+                    <div class="readability-metric">
+                        <span class="icon">${data.metrics.bullet.icon}</span>
+                        <span>개조식 ${data.metrics.bullet.count}개 항목</span>
+                    </div>
+                `;
+            }
+            if (data.metrics.words) {
+                metricsHtml += `
+                    <div class="readability-metric">
+                        <span class="icon">${data.metrics.words.icon}</span>
+                        <span>${data.metrics.words.count}개 단어</span>
+                    </div>
+                `;
+            }
+            if (data.metrics.terms) {
+                metricsHtml += `
+                    <div class="readability-metric">
+                        <span class="icon">${data.metrics.terms.icon}</span>
+                        <span>전문용어 ${data.metrics.terms.ratio}%</span>
+                    </div>
+                `;
+            }
+            if (data.metrics.score) {
+                metricsHtml += `
+                    <div class="readability-metric">
+                        <span class="icon">${data.metrics.score.icon}</span>
+                        <span>가독성 ${data.metrics.score.value}점</span>
+                    </div>
+                `;
+            }
+            
+            let technicalTermsHtml = '';
+            if (data.technicalTerms.length > 0) {
+                technicalTermsHtml = `
+                    <div class="readability-terms">
+                        <div class="readability-terms-title">🔍 발견된 전문용어</div>
+                        <div class="readability-terms-list">${data.technicalTerms.join(', ')}</div>
+                    </div>
+                `;
+            }
+            
+            let recommendationsHtml = '';
+            if (data.recommendations.length > 0) {
+                const recommendationsList = data.recommendations.map(rec => `<li>${rec}</li>`).join('');
+                recommendationsHtml = `
+                    <div class="readability-recommendations">
+                        <div class="readability-recommendations-title">
+                            <span>💡</span>
+                            <span>개선 권장사항</span>
+                        </div>
+                        <ul>${recommendationsList}</ul>
+                    </div>
+                `;
+            }
+            
+            section.innerHTML = `
+                <div class="readability-header">
+                    <div class="readability-title">
+                        <span>📊</span>
+                        <span>가독성 분석 결과</span>
+                    </div>
+                    <button class="readability-toggle" onclick="toggleReadabilitySection(this)">접기</button>
+                </div>
+                <div class="readability-content">
+                    <div class="readability-overall ${overallClass}">
+                        <span>${overallIcon}</span>
+                        <span>종합 평가: ${overallText}</span>
+                    </div>
+                    <div class="readability-metrics">
+                        ${metricsHtml}
+                    </div>
+                    ${technicalTermsHtml}
+                    ${recommendationsHtml}
+                </div>
+            `;
+            
+            // textbox-group의 맨 마지막에 가독성 섹션 추가 (textarea 아래)
+            parent.appendChild(section);
+        }
+
+        function toggleReadabilitySection(button) {
+            const content = button.closest('.readability-section').querySelector('.readability-content');
+            const isCollapsed = content.classList.contains('readability-collapsed');
+            
+            if (isCollapsed) {
+                content.classList.remove('readability-collapsed');
+                button.textContent = '접기';
+            } else {
+                content.classList.add('readability-collapsed');
+                button.textContent = '펼치기';
+            }
         }
 
         // 페이지 로드 시 JSON 데이터 로드

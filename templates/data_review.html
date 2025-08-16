@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRM Data Review</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1rem;
+        }
+
+        select {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            min-width: 200px;
+        }
+
+        select:hover {
+            border-color: #007bff;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .content-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .textbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .textbox-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .textbox-label .icon {
+            font-size: 1.3rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            resize: vertical;
+            background-color: #fafafa;
+            transition: border-color 0.3s ease;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            background-color: white;
+        }
+
+        .readonly {
+            background-color: #f8f9fa;
+            color: #495057;
+            cursor: default;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+        }
+
+        .info {
+            color: #0c5460;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .diagnosis-label {
+            color: #28a745;
+        }
+
+        .operation-label {
+            color: #007bff;
+        }
+
+        @media (max-width: 768px) {
+            .content-area {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group {
+                justify-content: space-between;
+            }
+            
+            select {
+                min-width: auto;
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">HRM Data Review</h1>
+            <p class="subtitle">제품별 진단 목록 및 운영 이력 데이터 검토</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">제품:</label>
+                <select id="productSelect">
+                    <option value="airconditioner">Airconditioner</option>
+                    <option value="refrigerator">Refrigerator</option>
+                    <option value="washer">Washer</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label class="control-label">ID:</label>
+                <select id="idSelect">
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="textbox-group">
+                <label class="textbox-label diagnosis-label">
+                    <span class="icon">🩺</span>
+                    Diagnosis Lists
+                </label>
+                <textarea id="diagnosisLists" class="readonly" readonly placeholder="선택된 제품의 진단 목록이 여기에 표시됩니다..."></textarea>
+                <div class="stats">
+                    <span id="diagnosisStats">데이터를 로드하려면 제품과 ID를 선택하세요.</span>
+                </div>
+            </div>
+            <div class="textbox-group">
+                <label class="textbox-label operation-label">
+                    <span class="icon">📊</span>
+                    Operation History
+                </label>
+                <textarea id="operationHistory" class="readonly" readonly placeholder="선택된 제품의 운영 이력이 여기에 표시됩니다..."></textarea>
+                <div class="stats">
+                    <span id="operationStats">데이터를 로드하려면 제품과 ID를 선택하세요.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let jsonData = [];
+
+        // JSON 데이터 로드
+        async function loadJsonData() {
+            try {
+                const response = await fetch('/api/data');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                jsonData = await response.json();
+                console.log('JSON data loaded:', jsonData.length, 'items');
+                updateIdOptions();
+                // 첫 번째 항목 자동 로드
+                if (jsonData.length > 0) {
+                    loadSelectedData();
+                }
+            } catch (error) {
+                console.error('Error loading JSON data:', error);
+                document.getElementById('idSelect').innerHTML = '<option value="">Error loading data</option>';
+                showError('데이터 로딩 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
+        // ID 옵션 업데이트
+        function updateIdOptions() {
+            const productSelect = document.getElementById('productSelect');
+            const idSelect = document.getElementById('idSelect');
+            const selectedProduct = productSelect.value;
+            
+            // 선택된 제품에 해당하는 ID들 필터링
+            const filteredData = jsonData.filter(item => {
+                if (selectedProduct === 'airconditioner') {
+                    return item.id.startsWith('airconditioner_');
+                } else if (selectedProduct === 'refrigerator') {
+                    return item.id.startsWith('refrigerator_');
+                } else if (selectedProduct === 'washer') {
+                    return item.id.startsWith('washer_');
+                }
+                return false;
+            });
+
+            // ID 옵션 생성
+            idSelect.innerHTML = '';
+            if (filteredData.length > 0) {
+                filteredData.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.id;
+                    idSelect.appendChild(option);
+                });
+            } else {
+                // 해당 제품 타입의 데이터가 없는 경우
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = `${selectedProduct} 데이터가 없습니다.`;
+                idSelect.appendChild(option);
+            }
+            
+            // 자동으로 데이터 로드
+            loadSelectedData();
+        }
+
+        // 선택된 데이터 로드
+        async function loadSelectedData() {
+            const selectedId = document.getElementById('idSelect').value;
+            const diagnosisTextarea = document.getElementById('diagnosisLists');
+            const operationTextarea = document.getElementById('operationHistory');
+            const diagnosisStats = document.getElementById('diagnosisStats');
+            const operationStats = document.getElementById('operationStats');
+            
+            if (!selectedId) {
+                diagnosisTextarea.value = '';
+                operationTextarea.value = '';
+                diagnosisStats.textContent = '제품과 ID를 선택하세요.';
+                operationStats.textContent = '제품과 ID를 선택하세요.';
+                return;
+            }
+
+            // 로딩 상태 표시
+            diagnosisTextarea.classList.add('loading');
+            operationTextarea.classList.add('loading');
+            diagnosisStats.textContent = '데이터 로딩 중...';
+            operationStats.textContent = '데이터 로딩 중...';
+
+            try {
+                // 진단 데이터 가져오기
+                const diagnosisResponse = await fetch(`/api/diagnosis/${selectedId}`);
+                if (diagnosisResponse.ok) {
+                    const diagnosisData = await diagnosisResponse.json();
+                    const diagnosisText = JSON.stringify(diagnosisData, null, 2);
+                    diagnosisTextarea.value = diagnosisText;
+                    
+                    // 통계 정보 업데이트
+                    const diagnosisLines = diagnosisText.split('\n').length;
+                    const diagnosisChars = diagnosisText.length;
+                    diagnosisStats.textContent = `${diagnosisLines} 줄, ${diagnosisChars.toLocaleString()} 문자`;
+                } else {
+                    diagnosisTextarea.value = 'No diagnosis data available for this item.';
+                    diagnosisStats.textContent = '데이터 없음';
+                }
+
+                // 운영 이력 데이터 가져오기
+                const operationResponse = await fetch(`/api/operation-history/${selectedId}`);
+                if (operationResponse.ok) {
+                    const contentType = operationResponse.headers.get('content-type');
+                    let operationText;
+                    let isTruncated = false;
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        // 일반 JSON 응답 (짧은 데이터)
+                        const operationData = await operationResponse.json();
+                        operationText = JSON.stringify(operationData, null, 2);
+                    } else {
+                        // 잘린 텍스트 응답 (긴 데이터)
+                        operationText = await operationResponse.text();
+                        isTruncated = operationText.includes('...(truncated)') || operationText.length >= 5000;
+                    }
+                    
+                    operationTextarea.value = operationText;
+                    
+                    // 통계 정보 업데이트
+                    const operationLines = operationText.split('\n').length;
+                    const operationChars = operationText.length;
+                    const truncatedNote = isTruncated ? ' (잘림)' : '';
+                    operationStats.textContent = `${operationLines} 줄, ${operationChars.toLocaleString()} 문자${truncatedNote}`;
+                } else {
+                    operationTextarea.value = 'No operation history data available for this item.';
+                    operationStats.textContent = '데이터 없음';
+                }
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                diagnosisTextarea.value = `Error loading data: ${error.message}`;
+                operationTextarea.value = `Error loading data: ${error.message}`;
+                diagnosisStats.textContent = '로딩 오류';
+                operationStats.textContent = '로딩 오류';
+                showError('데이터 로딩 중 오류가 발생했습니다: ' + error.message);
+            } finally {
+                // 로딩 상태 해제
+                diagnosisTextarea.classList.remove('loading');
+                operationTextarea.classList.remove('loading');
+            }
+        }
+
+        // 에러 메시지 표시
+        function showError(message) {
+            // 기존 에러 메시지 제거
+            const existingError = document.querySelector('.error');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // 새 에러 메시지 생성
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            
+            // 컨트롤 영역 다음에 추가
+            const controls = document.querySelector('.controls');
+            controls.parentNode.insertBefore(errorDiv, controls.nextSibling);
+            
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // 이벤트 리스너
+        document.getElementById('productSelect').addEventListener('change', updateIdOptions);
+        document.getElementById('idSelect').addEventListener('change', loadSelectedData);
+
+        // 페이지 로드 시 JSON 데이터 로드
+        window.addEventListener('load', loadJsonData);
+    </script>
+</body>
+</html>
