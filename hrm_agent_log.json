@@ -303,3 +303,15 @@
 {"id": "4fb54dcc-0de8-4774-8a9e-32578463063c", "ts": 1755310840.2363539, "stage": "run_op_history", "language": "ko"}
 {"id": "274dc74b-d8cc-440f-962f-3e87310366ea", "ts": 1755310840.3296149, "stage": "op_history_guardrail", "status": "failed", "error": "운영 이력 데이터가 비어있습니다. 분석을 위한 충분한 데이터가 제공되지 않았습니다."}
 {"id": "f40d7032-b8c9-45b2-ad15-b3b788c9e08b", "ts": 1755310853.3519971, "stage": "diagnosis_post_guard", "status": "readability_added"}
+{"id": "9a911f8d-6d1b-434f-ada5-c36761734943", "ts": 1755382490.526051, "stage": "run_diagnosis", "language": "ko"}
+{"id": "06d52250-4eab-46a6-a0d3-f65dc7c8b78b", "ts": 1755382490.7381074, "stage": "diagnosis_build_prompt", "provider": "aws", "language": "ko", "prompt_preview": "당신은 진단 데이터를 분석하여 고객이 가전제품 상태를 이해하고 실행 가능한 해결책을 제공하는 전문 가전 기술자입니다.\n\n기기 유형: airconditioner\n\n진단 정보:\nDevice Sub Type: FAC\nOverall Diagnosis Result: Lack\n- Error (Error, Code: AC-0102): Normal\n  Description: Everything is normal.\n- WeakCool (Weak Cool, Code: AC-0210): Explain\n  Description: Insufficient "}
+{"id": "25a27472-3719-45fc-bff7-c394c132b493", "ts": 1755382490.7779033, "stage": "run_op_history", "language": "ko"}
+{"id": "e4da0704-5546-469e-81c0-8bc7ef188167", "ts": 1755382490.800542, "stage": "op_history_guardrail", "status": "passed"}
+{"id": "ea09d685-8593-4085-ba41-c166394954f3", "ts": 1755382490.8222268, "stage": "op_history_build_prompt", "provider": "aws", "language": "ko", "prompt_preview": "가정용 가전제품(에어컨, 냉장고, 세탁기 등)의 운영 이력 데이터가 주어집니다.\n데이터를 분석하여 번호가 매겨진 항목(1-5개)으로 간결한 요약을 작성하세요.\n다음 규칙을 따르세요:\n\n1. **결론**은 항상 1번 항목이어야 합니다.\n   - 가능한 값: \"정상 동작\", \"동작 이상 감지\", \"데이터 부족\".\n\n2. 1번 항목 이후, 2-4개의 추가 항목으로 가장 중요한 운영 통찰을 요약하세요.\n   - 온도 추세, 사이클 성능, 오류 이벤트 또는 누락된 데이터를 포함하세요.\n   - 관련성이 있는 경우 구체적인 측정값을 언급하세요"}
+{"id": "97f7919c-a39f-4eb0-b915-db9c831b8438", "ts": 1755382516.2166204, "stage": "op_history_post_guard", "status": "readability_added"}
+{"id": "2ac3e741-6cd2-4421-a7b5-8c412dd9ed56", "ts": 1755382517.5995932, "stage": "diagnosis_post_guard", "status": "readability_added"}
+{"id": "9c49b197-cd3b-4fd3-a2f0-d192631cbf3a", "ts": 1755382527.226564, "stage": "run_diagnosis", "language": "en"}
+{"id": "19a5804d-3c0d-449e-97d8-9f90bdeb9284", "ts": 1755382527.2490842, "stage": "diagnosis_build_prompt", "provider": "aws", "language": "en", "prompt_preview": "You are an expert appliance technician analyzing diagnostic data to help customers understand their appliance status and provide actionable solutions.\n\nDevice Type: airconditioner\n\nDiagnostic Information:\nDevice Sub Type: FAC\nOverall Diagnosis Result: Lack\n- Error (Error, Code: AC-0102): Normal\n  De"}
+{"id": "ea4147d7-c4d4-445a-8acf-4b7fef785867", "ts": 1755382527.395989, "stage": "run_op_history", "language": "en"}
+{"id": "f12eaa52-b0f5-4e7b-985f-52ecb13b17b3", "ts": 1755382527.418395, "stage": "op_history_guardrail", "status": "failed", "error": "운영 이력 데이터가 비어있습니다. 분석을 위한 충분한 데이터가 제공되지 않았습니다."}
+{"id": "16bc3c0a-2136-4194-8d85-e7301df17c05", "ts": 1755382540.435688, "stage": "diagnosis_post_guard", "status": "readability_added"}

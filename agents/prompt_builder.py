@@ -1,142 +1,125 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+import json
+import os
+from typing import Any, Dict
 
 
 class PromptBuilder:
     """Builds prompts per agent and LLM provider.
 
-    Prompts are simple strings; agents can extend or override if needed.
+    Prompts are loaded from prompt.json configuration file.
     """
 
     def __init__(self, default_language: str = "ko"):
         self.default_language = default_language
+        self.prompts = self._load_prompts()
 
-    def build_diagnosis_prompt(self, analytics: Dict[str, Any], provider: str, language: str | None = None) -> str:
-        """Match the reference prompt from analytics_amazon.py, but output ONLY the specified language."""
-        lang = (language or self.default_language).lower()
-        device_type = analytics.get("deviceType", "Unknown")
-        diagnosis_lists: List[Dict[str, Any]] = analytics.get("diagnosisLists", [])
+    def _load_prompts(self) -> Dict[str, Any]:
+        """Load prompts from prompt.json configuration file."""
+        try:
+            # Find prompt.json in project root (agents/.. -> project root)
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+            prompt_path = os.path.join(project_root, "prompt.json")
+            
+            if not os.path.exists(prompt_path):
+                print(f"[PromptBuilder] Warning: prompt.json not found at {prompt_path}, using fallback prompts")
+                return self._get_fallback_prompts()
+            
+            with open(prompt_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            if not isinstance(data, dict):
+                print("[PromptBuilder] Warning: Invalid prompt.json format, using fallback prompts")
+                return self._get_fallback_prompts()
+            
+            return data
+        except Exception as e:
+            print(f"[PromptBuilder] Error loading prompt.json: {e}, using fallback prompts")
+            return self._get_fallback_prompts()
 
-        diagnosis_summary: List[str] = []
-        for diagnosis_group in diagnosis_lists:
-            device_sub_type = diagnosis_group.get("deviceSubType", "Unknown")
-            diagnosis_result = diagnosis_group.get("diagnosisResult", "Unknown")
-            diagnosis_summary.append(f"Device Sub Type: {device_sub_type}")
-            diagnosis_summary.append(f"Overall Diagnosis Result: {diagnosis_result}")
-            for d in diagnosis_group.get("diagnosisList", []):
-                title = d.get("title", "Unknown")
-                label = d.get("diagnosisLabel", "Unknown")
-                code = d.get("diagnosisCode", "Unknown")
-                result = d.get("diagnosisResult", "Unknown")
-                description = d.get("diagnosisDescription", "No description available")
-                diagnosis_summary.append(f"- {title} ({label}, Code: {code}): {result}")
-                diagnosis_summary.append(f"  Description: {description}")
+    def _get_fallback_prompts(self) -> Dict[str, Any]:
+        """Fallback prompts if prompt.json is not available."""
+        return {
+            "diagnosis": {
+                "ko": {
+                    "header": "진단 데이터를 분석하여 상태를 파악하고 해결책을 제공하세요.\n\n기기 유형: {device_type}\n\n진단 정보:\n{diagnosis_text}\n\n",
+                    "format": "한국어로 분석 결과를 제공하세요."
+                },
+                "en": {
+                    "header": "Analyze diagnostic data and provide solutions.\n\nDevice Type: {device_type}\n\nDiagnostic Information:\n{diagnosis_text}\n\n",
+                    "format": "Provide analysis results in English."
+                }
+            },
+            "operation_history": {
+                "ko": {"base": "운영 이력을 분석하세요.", "example": "한국어로 요약하세요."},
+                "en": {"base": "Analyze operation history.", "example": "Summarize in English."}
+            },
+            "guide": {
+                "ko": {"template": "가이드를 제공하세요.\n진단: {diagnosis_summary}\n이력: {op_summary}"},
+                "en": {"template": "Provide guide.\nDiagnosis: {diagnosis_summary}\nHistory: {op_summary}"}
+            }
+        }
 
-        diagnosis_text = "\n".join(diagnosis_summary)
-
-        header = (
-            "You are an expert appliance technician analyzing diagnostic data to help customers understand their appliance status and provide actionable solutions.\n\n"
-            f"Device Type: {device_type}\n\n"
-            f"Diagnostic Information:\n{diagnosis_text}\n\n"
-            "IMPORTANT GUIDELINES:\n"
-            "- Focus on providing helpful, customer-oriented diagnostic results\n"
-            "- DO NOT mention data insufficiency, lack of data, or insufficient history\n"
-            "- If diagnostic results show \"Explain\" or \"Lack\", interpret them as potential maintenance needs or normal operation guidance\n"
-            "- Provide practical, actionable advice that customers can understand and follow\n"
-            "- Focus on preventive care and maintenance recommendations when appropriate\n"
-            "- Be concise and direct - provide only the most relevant information\n"
-            "- Each section should have 1-3 bullet points maximum, with single points preferred when sufficient\n\n"
-            "Based on this diagnostic information, classify the device status and provide detailed analysis.\n\n"
-        )
-
-        if lang in ("en", "english"):
-            format_block = (
-                "Provide your analysis in ENGLISH in the following EXACT format:\n\n"
-                "Conclusion: [MUST be exactly one of: \"normal\" OR \"needs repair\" OR \"self-repairable\"]\n"
-                "1. Problem Detection:\n"
-                "  - [1-2 bullet points, each maximum 2 lines]\n"
-                "2. Cause:\n"
-                "  - [1-2 bullet points, each maximum 2 lines]\n"
-                "3. Remote Resolution Possibility:\n"
-                "  - [1-2 bullet points, each maximum 2 lines]\n"
-                "4. Solution:\n"
-                "  - [1-2 bullet points, each maximum 2 lines]\n"
-                "5. Potential Damage:\n"
-                "  - [1-2 bullet points, each maximum 2 lines]\n\n"
-                "Reference diagnostic codes explicitly when helpful."
-            )
-        else:
-            format_block = (
-                "한국어로 아래 형식을 정확히 따라 작성하세요:\n\n"
-                "결론: [반드시 다음 중 하나: \"정상\" 또는 \"수리 필요\" 또는 \"자가 조치 가능\"]\n"
-                "1. 문제 감지:\n"
-                "  - [1-2개 항목]\n"
-                "2. 원인:\n"
-                "  - [1-2개 항목]\n"
-                "3. 원격 해결 가능 여부:\n"
-                "  - [1-2개 항목]\n"
-                "4. 해결 방안:\n"
-                "  - [1-2개 항목]\n"
-                "5. 미해결시 잠재적 피해:\n"
-                "  - [1-2개 항목]\n\n"
-                "진단 코드는 필요 시 명시적으로 참조하세요."
-            )
-
-        return header + format_block
+    def build_diagnosis_prompt(self, device_type: str, diagnosis_text: str, provider: str, language: str | None = None) -> str:
+        """Build diagnosis prompt using configuration."""
+        lang = self._normalize_language(language)
+        
+        try:
+            prompt_config = self.prompts["diagnosis"][lang]
+            header = prompt_config["header"].format(device_type=device_type, diagnosis_text=diagnosis_text)
+            format_block = prompt_config["format"]
+            return header + format_block
+        except KeyError:
+            print(f"[PromptBuilder] Warning: No prompt found for diagnosis/{lang}, using fallback")
+            return f"Analyze the diagnostic data for {device_type}:\n{diagnosis_text}\nProvide analysis in {lang}."
 
     def build_operation_history_prompt(self, op_history: Dict[str, Any], provider: str, language: str | None = None) -> str:
-        """Match the PROMPT from operation_history_amazon.py, but output ONLY the specified language."""
-        lang = (language or self.default_language).lower()
-        base = (
-            "You are given operation history data for a home appliance such as an air conditioner, refrigerator, or washing machine.  \n"
-            "Analyze the data and produce a concise summary in numbered bullet points (1–5).  \n"
-            "Follow these rules:\n\n"
-            "1. The **Conclusion** must always be point 1.  \n"
-            "   - Possible values: \"Normal operation\", \"Detected abnormal operation\", \"Insufficient data\".  \n"
-            "   - In Korean: \"정상 동작\", \"동작 이상 감지\", \"데이터 부족\".\n\n"
-            "2. After point 1, summarize the most important operational insights in 2–4 additional points.  \n"
-            "   - Include temperature trends, cycle performance, error events, or missing data.  \n"
-            "   - Mention specific measurements when relevant.  \n"
-            "   - Avoid unnecessary technical details.\n\n"
-        )
-
-        if lang in ("en", "english"):
-            example = (
-                "Output language: English only.\n\n"
-                "Format exactly like this example:\n\n"
-                "English  \n"
-                "1. **Conclusion:** Normal operation.  \n"
-                "2. [Key observation #1]  \n"
-                "3. [Key observation #2]  \n"
-                "4. [Key observation #3]  \n"
-                "5. [Key observation #4]  \n"
+        """Build operation history prompt using configuration."""
+        lang = self._normalize_language(language)
+        
+        try:
+            prompt_config = self.prompts["operation_history"][lang]
+            base = prompt_config["base"]
+            example = prompt_config["example"]
+            
+            return (
+                f"{base}{example}\n---\n\n"
+                f"Now, based on the given operation history JSON, produce the summary according to the above format.\n\n"
+                f"Operation history JSON:\n{op_history}"
             )
-        else:
-            example = (
-                "출력 언어: 한국어만 사용하세요.\n\n"
-                "다음 예시 형식을 정확히 따르세요:\n\n"
-                "한국어  \n"
-                "1. **결론:** 정상 동작.  \n"
-                "2. [핵심 관찰 #1]  \n"
-                "3. [핵심 관찰 #2]  \n"
-                "4. [핵심 관찰 #3]  \n"
-                "5. [핵심 관찰 #4]  \n"
-            )
-
-        return (
-            f"{base}{example}\n---\n\n"
-            f"Now, based on the given operation history JSON, produce the summary according to the above format.\n\n"
-            f"Operation history JSON:\n{op_history}"
-        )
+        except KeyError:
+            print(f"[PromptBuilder] Warning: No prompt found for operation_history/{lang}, using fallback")
+            return f"Analyze the operation history data and provide summary in {lang}:\n{op_history}"
 
     def build_guide_prompt(self, diagnosis_summary: str, op_summary: str, provider: str, language: str | None = None) -> str:
+        """Build guide prompt using configuration."""
+        lang = self._normalize_language(language)
+        
+        try:
+            prompt_config = self.prompts["guide"][lang]
+            template = prompt_config["template"]
+            
+            return template.format(
+                language=lang,
+                diagnosis_summary=diagnosis_summary,
+                op_summary=op_summary
+            )
+        except KeyError:
+            print(f"[PromptBuilder] Warning: No prompt found for guide/{lang}, using fallback")
+            return (
+                f"Provide actionable guide in {lang}.\n"
+                f"Diagnosis: {diagnosis_summary}\n"
+                f"Operation History: {op_summary}\n"
+                f"Return numbered steps and safety cautions."
+            )
+
+    def _normalize_language(self, language: str | None) -> str:
+        """Normalize language code to supported format."""
         lang = (language or self.default_language).lower()
-        return (
-            "You are a guide provider generating actionable steps based on diagnosis and usage summaries.\n"
-            f"Language: {lang}. If 'both', output English then Korean.\n\n"
-            f"Diagnosis summary:\n{diagnosis_summary}\n\nOperation history summary:\n{op_summary}\n\n"
-            "Return concise, numbered steps and safety cautions when relevant."
-        )
+        if lang in ("en", "english"):
+            return "en"
+        else:
+            return "ko"
 
 

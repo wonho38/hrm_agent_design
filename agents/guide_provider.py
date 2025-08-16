@@ -24,6 +24,8 @@ class GuideProvider:
     def provide(self, diagnosis_summary: str, op_summary: str, language: str = "ko", stream: bool = True):
         payload = {"diagnosis_summary": diagnosis_summary, "op_summary": op_summary, "language": language}
         payload = self.guardrail.pre_guard(payload)
+        
+        # Build prompt using PromptBuilder
         prompt = self.prompt_builder.build_guide_prompt(diagnosis_summary, op_summary, self.provider, language)
         print(f"[GuideProvider] provider={self.provider}, language={language}")
         log_event({

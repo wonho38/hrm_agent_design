@@ -1,0 +1,241 @@
+classDiagram
+    %% Abstract Base Classes
+    class LLMClient {
+        <<abstract>>
+        +generate(prompt: str, stream: bool, **kwargs: Any) Any*
+    }
+    
+    class StreamingChunk {
+        <<dict>>
+    }
+    
+    class Guardrail {
+        +pre_guard(payload: Dict) Dict
+        +post_guard(raw_output: str) str
+    }
+    
+    class LLM {
+        <<abstract>>
+        +_llm_type: str*
+        +_identifying_params: Mapping*
+        +_call(prompt: str, **kwargs)*
+        +_stream(prompt: str, **kwargs)*
+    }
+
+    %% Concrete LLM Client Implementations
+    class OpenAIClient {
+        -model: str
+        -api_key: str
+        +__init__(model: str, api_key: str)
+        +generate(prompt: str, stream: bool, **kwargs: Any)
+    }
+    
+    class BedrockClient {
+        -model_id: str
+        -region: str
+        +__init__(model_id: str, region: str)
+        +generate(prompt: str, stream: bool, **kwargs: Any)
+    }
+    
+    class GaussClient {
+        -llm: GaussLLM
+        +__init__(access_key: str, secret_key: str)
+        +generate(prompt: str, stream: bool, **kwargs: Any)
+    }
+    
+    class GaussOClient {
+        -llm: GaussOLLM
+        +__init__(access_key: str, secret_key: str)
+        +generate(prompt: str, stream: bool, **kwargs: Any)
+    }
+
+    %% LangChain LLM Wrappers
+    class GaussLLM {
+        +access_key: str
+        +secret_key: str
+        +temperature: float
+        +top_p: float
+        +repetition_penalty: float
+        -client: GaussAPI
+        +_call(prompt: str, **kwargs) str
+        +_stream(prompt: str, **kwargs) Iterator
+    }
+    
+    class GaussOLLM {
+        +access_key: str
+        +secret_key: str
+        +temperature: float
+        +top_p: float
+        +repetition_penalty: float
+        -client: GaussOAPI
+        +_call(prompt: str, **kwargs) str
+        +_stream(prompt: str, **kwargs) Iterator
+    }
+
+    %% Agent Classes
+    class RootAgent {
+        -agents: Dict[str, Any]
+        -tools: Dict[str, Tool]
+        -mcp: MCPRegistry
+        -config: Dict[str, Any]
+        -default_language: str
+        +__init__(provider_override: str, provider_kwargs_override: Dict)
+        +register_agent(name: str, agent: Any)
+        +register_tool(name: str, tool: Tool)
+        +run_diagnosis(analytics: Dict, language: str) Generator
+        +run_op_history(operation_history: Dict, language: str) Generator
+        +run_guide(diagnosis_summary: str, op_summary: str, language: str) Generator
+        +call_tool(tool_name: str, *args, **kwargs) Generator
+        -_load_config() Dict
+        -_configure_langsmith()
+    }
+    
+    class DiagnosisSummarizer {
+        -provider: str
+        -provider_kwargs: Dict
+        -prompt_builder: PromptBuilder
+        -guardrail: Guardrail
+        +__init__(provider: str, **provider_kwargs)
+        +summarize(analytics: Dict, language: str, stream: bool)
+    }
+    
+    class OperationHistorySummarizer {
+        -provider: str
+        -provider_kwargs: Dict
+        -prompt_builder: PromptBuilder
+        -guardrail: Guardrail
+        +__init__(provider: str, **provider_kwargs)
+        +summarize(operation_history: Dict, language: str, stream: bool)
+    }
+    
+    class GuideProvider {
+        -provider: str
+        -provider_kwargs: Dict
+        -prompt_builder: PromptBuilder
+        -guardrail: Guardrail
+        +__init__(provider: str, **provider_kwargs)
+        +provide(diagnosis_summary: str, op_summary: str, language: str, stream: bool)
+    }
+
+    %% Guardrail Classes
+    class OperationHistoryGuardrail {
+        -include_readability_report: bool
+        -readability_checker: ReadabilityChecker
+        +__init__(include_readability_report: bool)
+        +pre_guard(operation_history: Dict) Dict
+        +post_guard(raw_output: str) str
+        -_generate_readability_report(result: Dict) str
+    }
+    
+    class DiagnosisGuardrail {
+        -include_readability_report: bool
+        -readability_checker: ReadabilityChecker
+        +__init__(include_readability_report: bool)
+        +pre_guard(diagnosis_data: Dict) Dict
+        +post_guard(raw_output: str) str
+        -_generate_readability_report(result: Dict) str
+    }
+
+    %% Utility Classes
+    class PromptBuilder {
+        -default_language: str
+        +__init__(default_language: str)
+        +build_diagnosis_prompt(analytics: Dict, provider: str, language: str) str
+        +build_operation_history_prompt(op_history: Dict, provider: str, language: str) str
+        +build_guide_prompt(diagnosis_summary: str, op_summary: str, provider: str, language: str) str
+    }
+    
+    class ReadabilityChecker {
+        -max_word_count: int
+        -max_bullet_count: int
+        -max_technical_term_ratio: float
+        -fk_score_min: int
+        -fk_score_max: int
+        -technical_terms: Set[str]
+        +__init__(max_word_count: int, max_bullet_count: int, max_technical_term_ratio: float, fk_score_min: int, fk_score_max: int)
+        +check_readability(text: str) Dict
+        -_calculate_korean_fk_score(text: str) int
+        -_check_bullet_format(text: str) tuple
+        -_check_word_count(text: str) tuple
+        -_check_technical_terms(text: str, word_count: int) tuple
+    }
+    
+    class GuideRetriever {
+        -_guides: Dict[str, str]
+        +__init__()
+        +add_guide(key: str, content: str)
+        +retrieve(query: str, top_k: int) List[str]
+        +stream(query: str, top_k: int) Generator
+    }
+    
+    class MCPRegistry {
+        -agents: Dict[str, Any]
+        -tools: Dict[str, MCPTool]
+        +__init__()
+        +register_agent(name: str, agent: Any)
+        +register_tool(name: str, tool: MCPTool)
+        +list() Dict
+    }
+
+    %% Web Application
+    class FlaskApp {
+        +json_data: List
+        +root_agent: RootAgent
+        +load_json_data()
+        +initialize_root_agent()
+        +index() str
+        +get_all_data() Response
+        +get_item_data(item_id: str) Response
+        +stream_diagnosis(item_id: str) Response
+        +stream_operation_history(item_id: str) Response
+    }
+
+    %% Exception Classes
+    class GuardrailException {
+        <<Exception>>
+    }
+
+    %% Inheritance Relationships
+    LLMClient <|-- OpenAIClient
+    LLMClient <|-- BedrockClient
+    LLMClient <|-- GaussClient
+    LLMClient <|-- GaussOClient
+    
+    LLM <|-- GaussLLM
+    LLM <|-- GaussOLLM
+    
+    Guardrail <|-- OperationHistoryGuardrail
+    Guardrail <|-- DiagnosisGuardrail
+    
+    Exception <|-- GuardrailException
+
+    %% Composition Relationships
+    RootAgent *-- DiagnosisSummarizer
+    RootAgent *-- OperationHistorySummarizer
+    RootAgent *-- GuideProvider
+    RootAgent *-- MCPRegistry
+    RootAgent *-- GuideRetriever
+    
+    DiagnosisSummarizer *-- PromptBuilder
+    DiagnosisSummarizer *-- Guardrail
+    
+    OperationHistorySummarizer *-- PromptBuilder
+    OperationHistorySummarizer *-- Guardrail
+    
+    GuideProvider *-- PromptBuilder
+    GuideProvider *-- Guardrail
+    
+    GaussClient *-- GaussLLM
+    GaussOClient *-- GaussOLLM
+    
+    OperationHistoryGuardrail *-- ReadabilityChecker
+    DiagnosisGuardrail *-- ReadabilityChecker
+    
+    FlaskApp *-- RootAgent
+
+    %% Dependency Relationships
+    DiagnosisSummarizer ..> LLMClient : uses
+    OperationHistorySummarizer ..> LLMClient : uses
+    GuideProvider ..> LLMClient : uses
+    
+    LLMClient ..> StreamingChunk : returns

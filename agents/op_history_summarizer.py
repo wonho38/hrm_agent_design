@@ -24,6 +24,8 @@ class OperationHistorySummarizer:
     def summarize(self, operation_history: Dict[str, Any], language: str = "ko", stream: bool = True):
         payload = {"operation_history": operation_history, "language": language}
         payload = self.guardrail.pre_guard(payload)
+        
+        # Build prompt using PromptBuilder with operation history data
         prompt = self.prompt_builder.build_operation_history_prompt(operation_history, self.provider, language)
         print(f"[OperationHistorySummarizer] provider={self.provider}, language={language}")
         log_event({
