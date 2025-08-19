@@ -114,6 +114,28 @@ class PromptBuilder:
                 f"Return numbered steps and safety cautions."
             )
 
+    def build_actions_guide_prompt(self, diagnosis_summary: str, reference_summaries: str, language: str | None = None) -> str:
+        """Build KO-only customer actions guide prompt using reference docs."""
+        lang = self._normalize_language(language)
+        if lang != "ko":
+            # Fallback: still return in ko format to enforce ko output
+            lang = "ko"
+        try:
+            prompt_config = self.prompts["guide"]["ko_actions"]
+            template = prompt_config["template"]
+            return template.format(
+                diagnosis_summary=diagnosis_summary,
+                reference_summaries=reference_summaries,
+            )
+        except KeyError:
+            print("[PromptBuilder] Warning: No prompt found for guide/ko_actions, using fallback")
+            return (
+                "아래 진단 요약과 참고 문서 3개를 바탕으로 고객이 수행할 수 있는 조치 5개 이내를 한국어로 번호 목록으로 제시하세요.\n"
+                "진단 요약:\n" + diagnosis_summary + "\n\n"
+                "참고 문서 요약:\n" + reference_summaries + "\n"
+                "각 항목은 1~2문장으로 구체적으로 작성하고, 필요한 경우 항목 끝에 '출처: http://...'을 1개만 표기하세요."
+            )
+
     def _normalize_language(self, language: str | None) -> str:
         """Normalize language code to supported format."""
         lang = (language or self.default_language).lower()

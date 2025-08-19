@@ -40,6 +40,8 @@ class RootAgent:
             if isinstance(provider_kwargs_override, dict)
             else {k: v for k, v in llm_cfg.items() if k in {"model", "api_key", "model_id", "region", "access_key", "secret_key"}}
         )
+        self.provider: str = provider
+        self.provider_kwargs: Dict[str, Any] = provider_kwargs
 
         # Configure LangSmith tracing from config if present
         self._configure_langsmith()
@@ -167,15 +169,53 @@ class RootAgent:
             print(f"[RootAgent] Post-guardrail processing failed: {e}")
             log_event({"stage": "op_history_post_guard", "status": "failed", "error": str(e)})
 
-    def run_guide(self, diagnosis_summary: str, op_summary: str, language: Optional[str] = None) -> Generator[str, None, None]:
-        agent: GuideProvider = self.agents["guide_provider"]
-        lang = language or self.default_language
+    def run_actions_guide(self, diagnosis_summary: str, category: str, language: Optional[str] = None) -> Generator[str, None, None]:
+        """Generate customer action guide in Korean using diagnosis summary and top-3 retrieved docs.
+
+        - Only operates when language == 'ko'
+        - Queries GuideRetriever API (localhost:5001) with category filter and diagnosis summary
+        - Uses GuideProvider with GuideGuardrail for post-processing and readability analysis
+        """
+        from .guardrails import GuideGuardrail
         from .logger import log_event
-        print(f"[RootAgent] run_guide language={lang}")
-        log_event({"stage": "run_guide", "language": lang})
-        with self._trace_ctx("guide_provider"):
-            for chunk in agent.provide(diagnosis_summary, op_summary, language=lang, stream=True):
+
+        lang = (language or self.default_language).lower()
+        if lang != "ko":
+            return
+
+        print(f"[RootAgent] run_actions_guide language={lang}")
+        log_event({"stage": "run_actions_guide", "language": lang})
+
+        # Retrieve 3 reference documents using the tool
+        retrieved_docs_text = ""
+        for doc_chunk in self.call_tool("guider_retriever", query=diagnosis_summary, category_filter=category):
+            retrieved_docs_text += doc_chunk
+
+        # Initialize guardrail with readability analysis
+        guardrail = GuideGuardrail(include_readability_report=True)
+
+        # Get GuideProvider agent and collect all chunks
+        agent: GuideProvider = self.agents["guide_provider"]
+        raw_output = ""
+        
+        with self._trace_ctx("actions_guide_provider"):
+            for chunk in agent.provide_actions_guide(diagnosis_summary, retrieved_docs_text, language=lang, stream=True):
+                raw_output += chunk
                 yield chunk
+
+        # Apply post-guardrail processing with readability analysis
+        try:
+            processed_output = guardrail.post_guard(raw_output)
+            
+            # If post_guard added content (readability report), yield the additional content
+            if len(processed_output) > len(raw_output):
+                additional_content = processed_output[len(raw_output):]
+                yield additional_content
+                log_event({"stage": "actions_guide_post_guard", "status": "readability_added"})
+                
+        except Exception as e:
+            print(f"[RootAgent] Actions guide post-guardrail processing failed: {e}")
+            log_event({"stage": "actions_guide_post_guard", "status": "failed", "error": str(e)})
 
     def call_tool(self, tool_name: str, *args: Any, **kwargs: Any) -> Generator[str, None, None]:
         tool = self.tools.get(tool_name)

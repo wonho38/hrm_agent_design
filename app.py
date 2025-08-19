@@ -266,6 +266,73 @@ def guide_retriever():
     """메인 페이지"""
     return render_template('guide_retriever.html')
 
+@app.route('/api/stream/actions-guide/<string:item_id>', methods=['GET', 'POST'])
+def stream_actions_guide(item_id):
+    """진단 결과 기반 고객 조치 가이드를 스트리밍 생성 (한국어 전용)."""
+    try:
+        if not root_agent:
+            return jsonify({'error': 'RootAgent가 초기화되지 않았습니다.'}), 500
+
+        # POST 요청에서 데이터 가져오기
+        if request.method == 'POST':
+            data = request.get_json() or {}
+            language = data.get('language', 'ko')
+            category = data.get('category', '')
+            diagnosis_summary = data.get('diagnosis_summary', '')
+        else:
+            # GET 요청 (기존 호환성)
+            language = request.args.get('language', 'ko')
+            category = request.args.get('category', '')
+            diagnosis_summary = request.args.get('diagnosis_summary', '')
+
+        if language.lower() != 'ko':
+            return jsonify({'error': '한국어에서만 지원됩니다.'}), 400
+
+        # 선택된 ID에 해당하는 데이터 찾기
+        item_data = next((item for item in json_data if item.get('id') == item_id), None)
+        if not item_data:
+            return jsonify({'error': f'ID {item_id}에 해당하는 데이터를 찾을 수 없습니다.'}), 404
+
+        # 진단 요약이 없으면 기본값 생성
+        if not diagnosis_summary:
+            analytics = item_data.get('analytics', {})
+            device_type = analytics.get('deviceType', category)
+            diagnosis_summary = f"제품군: {category or device_type} - 사용자가 자가 조치 가능 결론에 해당하는 증상으로 판단됨"
+
+        # Get device type as fallback
+        analytics = item_data.get('analytics', {})
+        device_type = analytics.get('deviceType', category or 'unknown')
+        final_category = category or device_type
+
+        def generate():
+            try:
+                print(f"[stream_actions_guide] 시작 - category: {final_category}, diagnosis_summary: {diagnosis_summary[:100]}...")
+                agent = RootAgent(provider_override=root_agent.provider)
+                # 초기 하트비트
+                yield f"data: {json.dumps({'chunk': '', 'done': False})}\n\n"
+                
+                chunk_count = 0
+                for chunk in agent.run_actions_guide(diagnosis_summary, category=final_category, language='ko'):
+                    chunk_count += 1
+                    print(f"[stream_actions_guide] 청크 {chunk_count}: {chunk[:50]}...")
+                    yield f"data: {json.dumps({'chunk': chunk, 'done': False})}\n\n"
+                
+                print(f"[stream_actions_guide] 완료 - 총 {chunk_count}개 청크")
+                yield f"data: {json.dumps({'chunk': '', 'done': True})}\n\n"
+            except Exception as e:
+                print(f"[stream_actions_guide] 오류: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+
+        return Response(
+            generate(),
+            mimetype='text/event-stream',
+            headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no'}
+        )
+    except Exception as e:
+        return jsonify({'error': f'스트리밍 중 오류 발생: {str(e)}'}), 500
+
 @app.route('/prompt-editor')
 def prompt_editor():
     """프롬프트 편집기 페이지"""

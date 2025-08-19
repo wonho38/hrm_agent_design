@@ -25,6 +25,9 @@
     },
     "en": {
       "template": "You are a guide provider generating actionable steps based on diagnosis and usage summaries.\nLanguage: {language}. If 'both', output English then Korean.\n\nDiagnosis summary:\n{diagnosis_summary}\n\nOperation history summary:\n{op_summary}\n\nReturn concise, numbered steps and safety cautions when relevant."
+    },
+    "ko_actions": {
+      "template": "당신은 가전제품 사용 고객에게 '자가 해결'을 위한 실질적인 조치 가이드를 제공하는 전문가입니다.\n\n규칙:\n- 반드시 한국어로만 작성하세요.\n- 최대 5개 항목의 번호 목록으로 간결하게 제시하세요.\n- 안전 관련 주의가 있으면 첫 항목으로 강조하세요.\n- 각 항목은 1~2문장으로 구체적인 행동을 제시하세요.\n- 아래의 참고 문서 내용이 조치에 직접적으로 기여한다면, 해당 항목 끝에 \"출처: {url}\" 형태로 1개 URL만 표기하세요. (없으면 생략)\n\n입력:\n[진단 요약]\n{diagnosis_summary}\n\n[참고 문서 요약 3개]\n{reference_summaries}\n\n출력 형식 (예시):\n1. ... (필요시 \"출처: http://...\")\n2. ...\n3. ...\n4. ...\n5. ...\n"
     }
   }
 }

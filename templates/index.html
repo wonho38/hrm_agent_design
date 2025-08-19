@@ -150,6 +150,7 @@
             flex-direction: column;
             gap: 10px;
             align-items: stretch;
+            position: relative; /* 컨테이너 위치 고정 */
         }
 
         .textbox-label {
@@ -205,9 +206,62 @@
             margin-left: 10px;
         }
 
+        .status-message {
+            display: none;
+            margin-left: 15px;
+            color: #28a745;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 1px solid #28a745;
+            border-radius: 20px;
+            animation: statusPulse 1.5s ease-in-out infinite;
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-message.active {
+            display: flex;
+        }
+
+        .status-message::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border: 2px solid #28a745;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: statusSpin 1s linear infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+            }
+            50% { 
+                opacity: 0.8; 
+                transform: scale(1.02);
+                box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+            }
+        }
+
+        @keyframes statusSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
 
         .button-container {
@@ -347,6 +401,38 @@
         .format-toggle-btn:hover {
             opacity: 1;
         }
+
+        /* Formatted user guide styles */
+        .formatted-user-guide {
+            line-height: 1.6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fafafa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 200px;
+            transition: all 0.3s ease;
+        }
+        .formatted-user-guide:hover {
+            border-color: #6f42c1;
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+            background-color: white;
+        }
+        .user-guide-title {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-bottom: 2px solid #6f42c1;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .user-guide-list { margin: 0; padding-left: 18px; }
+        .user-guide-item { margin: 10px 0; }
+        .user-guide-source a { color: #6f42c1; text-decoration: none; }
+        .user-guide-source a:hover { text-decoration: underline; }
 
         /* Formatted diagnosis styles - 새로운 박스 형태 */
         .formatted-diagnosis {
@@ -775,6 +861,7 @@
             <div class="button-container">
                 <button class="generate-btn" id="generateBtn" onclick="generateContent()">Generation</button>
                 <div class="spinner" id="loadingSpinner"></div>
+                <div class="status-message" id="statusMessage"></div>
             </div>
         </div>
 
@@ -1469,26 +1556,20 @@
             // 로딩 상태 표시
             const generateBtn = document.getElementById('generateBtn');
             const spinner = document.getElementById('loadingSpinner');
+            const statusMessage = document.getElementById('statusMessage');
             
             generateBtn.disabled = true;
             spinner.style.display = 'block';
+            statusMessage.classList.remove('active'); // 상태 메시지 초기화
             
             // 텍스트 영역 초기화 및 기존 포맷 제거
             diagnosisSummarizationTextarea.value = '';
             opHistorySummarizationTextarea.value = '';
+            document.getElementById('userGuide').value = ''; // User Guide 초기화
             
-            // 기존 포맷된 디스플레이 제거
-            [diagnosisSummarizationTextarea, opHistorySummarizationTextarea].forEach(textarea => {
-                const parent = textarea.parentNode;
-                const existingFormattedOp = parent.querySelector('.formatted-op-history');
-                const existingFormattedDiag = parent.querySelector('.formatted-diagnosis');
-                const existingToggle = parent.querySelector('.format-toggle-btn');
-                const existingReadability = parent.querySelector('.readability-section');
-                if (existingFormattedOp) existingFormattedOp.remove();
-                if (existingFormattedDiag) existingFormattedDiag.remove();
-                if (existingToggle) existingToggle.remove();
-                if (existingReadability) existingReadability.remove(); // 기존 가독성 섹션도 제거
-                textarea.style.display = 'block'; // 원본 textarea 다시 표시
+            // 기존 포맷된 디스플레이 제거 - 더 철저한 정리
+            [diagnosisSummarizationTextarea, opHistorySummarizationTextarea, document.getElementById('userGuide')].forEach(textarea => {
+                resetTextboxGroup(textarea);
             });
 
             try {
@@ -1506,6 +1587,8 @@
                 setTimeout(() => {
                     applyDiagnosisFormatting(diagnosisSummarizationTextarea);
                     applyOperationHistoryFormatting(opHistorySummarizationTextarea);
+                    // 진단 결과가 '자가 조치 가능'인 경우 고객 조치 가이드 생성 (한국어일 때만)
+                    tryGenerateActionsGuide();
                 }, 500); // 약간의 지연 후 포맷팅 적용
 
             } catch (error) {
@@ -1516,7 +1599,223 @@
                 // 로딩 상태 해제
                 generateBtn.disabled = false;
                 spinner.style.display = 'none';
+                statusMessage.classList.remove('active'); // 상태 메시지 숨기기
             }
+        }
+
+        function extractConclusionKo(text) {
+            // 결론: 자가 조치 가능/수리 필요/정상 등 패턴 탐지
+            const m = text.match(/결론\s*[:：]\s*([^\n]+)/);
+            return m ? m[1].trim() : '';
+        }
+
+        function tryGenerateActionsGuide() {
+            const lang = document.getElementById('languageSelect').value;
+            if (lang !== 'ko') {
+                console.log('[tryGenerateActionsGuide] 언어가 한국어가 아님:', lang);
+                return;
+            }
+            
+            const diagnosisText = document.getElementById('diagnosisSummarization').value || '';
+            console.log('[tryGenerateActionsGuide] 진단 텍스트:', diagnosisText.substring(0, 200) + '...');
+            
+            const conclusion = extractConclusionKo(diagnosisText);
+            console.log('[tryGenerateActionsGuide] 추출된 결론:', conclusion);
+            
+            if (!conclusion || !/자가\s*조치\s*가능|자가\s*해결\s*가능/.test(conclusion)) {
+                console.log('[tryGenerateActionsGuide] 결론이 자가 조치 가능이 아님:', conclusion);
+                return;
+            }
+
+            const selectedProduct = document.getElementById('productSelect').value; // airconditioner|refrigerator|washer
+            const selectedId = document.getElementById('idSelect').value;
+            
+            console.log('[tryGenerateActionsGuide] 시작:', {
+                lang,
+                conclusion,
+                selectedProduct,
+                selectedId
+            });
+
+            // User Guide 생성 상태 메시지 표시
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = '"User Guide"를 생성 중입니다.';
+            statusMessage.classList.add('active');
+
+            const userGuideTextarea = document.getElementById('userGuide');
+            userGuideTextarea.value = '';
+
+            // 진단 요약에서 가독성 보고서 부분 제거 (원본 내용만 전송)
+            const cleanDiagnosisText = diagnosisText.split('📊 **가독성 분석 결과**')[0].trim();
+
+            // 서버에 가이드 생성을 요청 (SSE streaming) - POST로 변경하여 진단 요약 전송
+            const url = `/api/stream/actions-guide/${selectedId}`;
+            
+            console.log('[tryGenerateActionsGuide] API 요청:', {
+                url,
+                category: selectedProduct,
+                language: lang,
+                diagnosis_summary_length: cleanDiagnosisText.length
+            });
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    category: selectedProduct,
+                    language: lang,
+                    diagnosis_summary: cleanDiagnosisText
+                })
+            }).then(resp => {
+                if (!resp.ok) throw new Error(`HTTP error ${resp.status}`);
+                console.log('[tryGenerateActionsGuide] 응답 받음, 스트림 시작');
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                function readStream() {
+                    reader.read().then(({done, value}) => {
+                        if (done) {
+                            console.log('[tryGenerateActionsGuide] 스트림 완료');
+                            return;
+                        }
+                        const chunk = decoder.decode(value);
+                        const lines = chunk.split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.error) {
+                                        console.error('[tryGenerateActionsGuide] 서버 에러:', data.error);
+                                        statusMessage.classList.remove('active'); // 에러 시 상태 메시지 숨기기
+                                        userGuideTextarea.value = `오류: ${data.error}`;
+                                        return;
+                                    }
+                                    if (data.chunk) {
+                                        userGuideTextarea.value += data.chunk;
+                                        console.log('[tryGenerateActionsGuide] 청크 받음:', data.chunk.substring(0, 50) + '...');
+                                    }
+                                    if (data.done) {
+                                        console.log('[tryGenerateActionsGuide] 스트림 완료, 후처리 시작');
+                                        // User Guide 생성 완료 - 상태 메시지 숨기기
+                                        statusMessage.classList.remove('active');
+                                        // 스트림 완료 후 가독성 보고서 처리 및 포맷팅
+                                        setTimeout(() => {
+                                            processReadabilityReport(userGuideTextarea);
+                                            applyUserGuideFormatting(userGuideTextarea);
+                                        }, 200);
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.warn('[tryGenerateActionsGuide] JSON 파싱 오류:', e, line);
+                                }
+                            }
+                        }
+                        readStream();
+                    }).catch((e) => {
+                        console.error('[tryGenerateActionsGuide] 스트림 읽기 오류:', e);
+                        statusMessage.classList.remove('active'); // 스트림 오류 시 상태 메시지 숨기기
+                    });
+                }
+                readStream();
+            }).catch((e) => {
+                console.error('[tryGenerateActionsGuide] fetch 오류:', e);
+                statusMessage.classList.remove('active'); // fetch 오류 시 상태 메시지 숨기기
+                userGuideTextarea.value = `요청 오류: ${e.message}`;
+            });
+        }
+
+        // User Guide 포맷팅
+        function formatUserGuide(rawText) {
+            if (!rawText || rawText.trim() === '') return '';
+            const lines = rawText.split('\n').filter(l => l.trim() !== '');
+            const items = [];
+            for (let i = 0; i < lines.length; i++) {
+                const m = lines[i].match(/^(\d+)\.\s*(.+)$/);
+                if (m) {
+                    let content = m[2];
+                    // 다음 줄이 번호가 아니면 같은 항목으로 이어붙임
+                    let j = i + 1;
+                    while (j < lines.length && !/^(\d+)\./.test(lines[j])) {
+                        content += ' ' + lines[j].trim();
+                        j++;
+                    }
+                    i = j - 1;
+                    // 출처 URL 추출
+                    let sourceHtml = '';
+                    const urlMatch = content.match(/출처\s*:\s*(https?:\/\/\S+)/i);
+                    if (urlMatch) {
+                        const url = urlMatch[1];
+                        content = content.replace(urlMatch[0], '').trim();
+                        sourceHtml = ` <span class="user-guide-source">(출처: <a href="${url}" target="_blank">${url}</a>)</span>`;
+                    }
+                    // 강조 처리
+                    content = processTextFormatting(content);
+                    items.push(`<li class="user-guide-item">${content}${sourceHtml}</li>`);
+                }
+            }
+            let html = `
+                <div class="formatted-user-guide">
+                    <h3 class="user-guide-title">
+                        <span>고객 조치 가이드</span>
+                    </h3>
+                    <ol class="user-guide-list">${items.join('')}</ol>
+                </div>
+            `;
+            return html;
+        }
+
+        function applyUserGuideFormatting(textarea) {
+            const rawText = textarea.value;
+            if (!rawText || rawText.trim() === '') return;
+            const parent = textarea.parentNode;
+            const existing = parent.querySelector('.formatted-user-guide');
+            const existingToggle = parent.querySelector('.format-toggle-btn');
+            if (existing) existing.remove();
+            if (existingToggle) existingToggle.remove();
+
+            const formattedDiv = document.createElement('div');
+            formattedDiv.innerHTML = formatUserGuide(rawText);
+
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'format-toggle-btn';
+            toggleButton.textContent = '원본';
+            toggleButton.title = '원본 텍스트 보기/숨기기';
+            
+            // 가독성 섹션이 있는지 확인
+            const readabilitySection = parent.querySelector('.readability-section');
+            
+            // textarea 숨기고 포맷된 div와 버튼 추가
+            textarea.style.display = 'none';
+            
+            // 가독성 섹션이 있으면 그 앞에 추가, 없으면 맨 뒤에 추가
+            if (readabilitySection) {
+                parent.insertBefore(formattedDiv, readabilitySection);
+                parent.insertBefore(toggleButton, readabilitySection);
+            } else {
+                parent.appendChild(formattedDiv);
+                parent.appendChild(toggleButton);
+            }
+
+            let showingFormatted = true;
+            function toggleDisplay() {
+                if (showingFormatted) {
+                    textarea.style.display = 'block';
+                    formattedDiv.style.display = 'none';
+                    toggleButton.textContent = '포맷';
+                    toggleButton.title = '포맷된 보기로 전환';
+                    showingFormatted = false;
+                } else {
+                    textarea.style.display = 'none';
+                    formattedDiv.style.display = 'block';
+                    toggleButton.textContent = '원본';
+                    toggleButton.title = '원본 텍스트 보기로 전환';
+                    showingFormatted = true;
+                }
+            }
+
+            toggleButton.addEventListener('click', toggleDisplay);
+            formattedDiv.addEventListener('dblclick', toggleDisplay);
         }
 
         // 원본 데이터 로드 (기존 기능 유지)
@@ -1793,7 +2092,7 @@
             // 새 가독성 섹션 생성
             const section = document.createElement('div');
             section.className = 'readability-section';
-            section.style.marginTop = '15px'; // textarea와 간격 확보
+            // CSS에서 이미 margin-top: 20px가 정의되어 있으므로 inline style 제거
             
             const overallClass = data.overall === 'good' ? 'good' : 'poor';
             const overallText = data.overall === 'good' ? '양호' : '개선 필요';
@@ -1893,6 +2192,25 @@
                 content.classList.add('readability-collapsed');
                 button.textContent = '펼치기';
             }
+        }
+
+        // Textbox group을 원래 상태로 완전히 리셋하는 함수
+        function resetTextboxGroup(textarea) {
+            const parent = textarea.parentNode;
+            
+            // 모든 동적으로 추가된 요소들 제거
+            const dynamicElements = parent.querySelectorAll('.formatted-op-history, .formatted-diagnosis, .formatted-user-guide, .format-toggle-btn, .readability-section');
+            dynamicElements.forEach(element => element.remove());
+            
+            // textarea를 다시 표시하고 스타일 초기화
+            textarea.style.display = 'block';
+            textarea.style.position = '';
+            textarea.style.margin = '';
+            textarea.style.padding = '';
+            
+            // 부모 컨테이너의 스타일도 초기화
+            parent.style.height = '';
+            parent.style.minHeight = '';
         }
 
         // 페이지 로드 시 JSON 데이터 로드
