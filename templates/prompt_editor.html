@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Editor</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); padding: 24px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .title { font-size: 1.8rem; color: #2c3e50; font-weight: 700; }
+        .back a { color: #007bff; text-decoration: none; font-weight: 600; padding: 6px 10px; border-radius: 6px; background: #e7f3ff; }
+        .back a:hover { background: #d8ecff; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .section { border: 1px solid #e9ecef; border-radius: 8px; padding: 14px; background: #fafafa; }
+        .section h3 { margin: 0 0 10px 0; color: #2c3e50; font-size: 1.1rem; }
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .field label { font-weight: 600; color: #495057; font-size: 0.9rem; }
+        textarea { width: 100%; min-height: 160px; resize: vertical; border: 2px solid #dee2e6; border-radius: 6px; padding: 10px; font-family: 'Consolas','Monaco',monospace; font-size: 13px; background: #fff; }
+        .actions { margin-top: 16px; display: flex; gap: 10px; }
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: #28a745; color: #fff; }
+        .btn-secondary { background: #6c757d; color: #fff; }
+        .status { margin-left: auto; font-size: 0.9rem; color: #495057; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+ </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">Prompt Editor</div>
+            <div class="back"><a href="/">← Back to Home</a></div>
+        </div>
+
+        <div class="grid">
+            <div class="section" id="diagnosis-ko">
+                <h3>Diagnosis (KO)</h3>
+                <div class="field">
+                    <label for="diagnosis.ko.header">header</label>
+                    <textarea id="diagnosis.ko.header"></textarea>
+                </div>
+                <div class="field">
+                    <label for="diagnosis.ko.format">format</label>
+                    <textarea id="diagnosis.ko.format"></textarea>
+                </div>
+            </div>
+            <div class="section" id="diagnosis-en">
+                <h3>Diagnosis (EN)</h3>
+                <div class="field">
+                    <label for="diagnosis.en.header">header</label>
+                    <textarea id="diagnosis.en.header"></textarea>
+                </div>
+                <div class="field">
+                    <label for="diagnosis.en.format">format</label>
+                    <textarea id="diagnosis.en.format"></textarea>
+                </div>
+            </div>
+
+            <div class="section" id="op-ko">
+                <h3>Operation History (KO)</h3>
+                <div class="field">
+                    <label for="operation_history.ko.base">base</label>
+                    <textarea id="operation_history.ko.base"></textarea>
+                </div>
+                <div class="field">
+                    <label for="operation_history.ko.example">example</label>
+                    <textarea id="operation_history.ko.example"></textarea>
+                </div>
+            </div>
+            <div class="section" id="op-en">
+                <h3>Operation History (EN)</h3>
+                <div class="field">
+                    <label for="operation_history.en.base">base</label>
+                    <textarea id="operation_history.en.base"></textarea>
+                </div>
+                <div class="field">
+                    <label for="operation_history.en.example">example</label>
+                    <textarea id="operation_history.en.example"></textarea>
+                </div>
+            </div>
+
+            <div class="section" id="guide-ko">
+                <h3>Guide (KO)</h3>
+                <div class="field">
+                    <label for="guide.ko.template">template</label>
+                    <textarea id="guide.ko.template"></textarea>
+                </div>
+            </div>
+            <div class="section" id="guide-en">
+                <h3>Guide (EN)</h3>
+                <div class="field">
+                    <label for="guide.en.template">template</label>
+                    <textarea id="guide.en.template"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="saveBtn">Save</button>
+            <button class="btn btn-secondary" id="reloadBtn">Reload</button>
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+
+        function setStatus(msg, ok=true) {
+            statusEl.textContent = msg;
+            statusEl.style.color = ok ? '#155724' : '#721c24';
+        }
+
+        function get(id) { return document.getElementById(id); }
+
+        async function loadPrompt() {
+            setStatus('Loading...');
+            try {
+                const res = await fetch('/api/prompt');
+                if (!res.ok) throw new Error('Failed to load prompt.json');
+                const data = await res.json();
+                // Populate fields safely with optional chaining
+                get('diagnosis.ko.header').value = data?.diagnosis?.ko?.header || '';
+                get('diagnosis.ko.format').value = data?.diagnosis?.ko?.format || '';
+                get('diagnosis.en.header').value = data?.diagnosis?.en?.header || '';
+                get('diagnosis.en.format').value = data?.diagnosis?.en?.format || '';
+
+                get('operation_history.ko.base').value = data?.operation_history?.ko?.base || '';
+                get('operation_history.ko.example').value = data?.operation_history?.ko?.example || '';
+                get('operation_history.en.base').value = data?.operation_history?.en?.base || '';
+                get('operation_history.en.example').value = data?.operation_history?.en?.example || '';
+
+                get('guide.ko.template').value = data?.guide?.ko?.template || '';
+                get('guide.en.template').value = data?.guide?.en?.template || '';
+                setStatus('Loaded');
+            } catch (e) {
+                console.error(e);
+                setStatus('Load failed: ' + e.message, false);
+            }
+        }
+
+        function collectPrompt() {
+            return {
+                diagnosis: {
+                    ko: {
+                        header: get('diagnosis.ko.header').value,
+                        format: get('diagnosis.ko.format').value,
+                    },
+                    en: {
+                        header: get('diagnosis.en.header').value,
+                        format: get('diagnosis.en.format').value,
+                    }
+                },
+                operation_history: {
+                    ko: {
+                        base: get('operation_history.ko.base').value,
+                        example: get('operation_history.ko.example').value,
+                    },
+                    en: {
+                        base: get('operation_history.en.base').value,
+                        example: get('operation_history.en.example').value,
+                    }
+                },
+                guide: {
+                    ko: { template: get('guide.ko.template').value },
+                    en: { template: get('guide.en.template').value }
+                }
+            };
+        }
+
+        async function savePrompt() {
+            setStatus('Saving...');
+            try {
+                const body = collectPrompt();
+                const res = await fetch('/api/prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Save failed');
+                setStatus('Saved');
+            } catch (e) {
+                console.error(e);
+                setStatus('Save failed: ' + e.message, false);
+            }
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', savePrompt);
+        document.getElementById('reloadBtn').addEventListener('click', loadPrompt);
+        window.addEventListener('load', loadPrompt);
+    </script>
+</body>
+</html>
+
+

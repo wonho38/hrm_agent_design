@@ -215,6 +215,24 @@
             align-items: center;
         }
 
+        /* Header navigation links */
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .nav-link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        .nav-link:hover {
+            background-color: #e7f3ff;
+        }
+
         /* Formatted operation history styles */
         .formatted-op-history {
             line-height: 1.6;
@@ -713,6 +731,11 @@
 <body>
     <div class="container">
         <div class="header">
+            <div class="nav-links">
+                <a class="nav-link" href="/guide-retriever">Guide Retriever</a>
+                <a class="nav-link" href="/data-review">Data Review</a>
+                <a class="nav-link" href="/prompt-editor">Prompt Editor</a>
+            </div>
             <h1 class="title">HRM AI Agent</h1>
             <div class="settings">
                 <div class="setting-group">

@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 from .llm_client_base import LLMClient, StreamingChunk
 from .langchain_gauss import GaussLLM
-from .langsmith_config import setup_langsmith, create_run_name, get_langsmith_tags
+ 
 
 
 class GaussClient(LLMClient):
@@ -18,8 +18,6 @@ class GaussClient(LLMClient):
             repetition_penalty=1.03,
         )
         
-        # Setup LangSmith tracing
-        setup_langsmith()
 
     def generate(self, prompt: str, stream: bool = False, **kwargs: Any):
         # Update LLM parameters if provided
@@ -30,30 +28,16 @@ class GaussClient(LLMClient):
         if "repetition_penalty" in kwargs:
             self.llm.repetition_penalty = kwargs["repetition_penalty"]
         
-        # Configure LangSmith tracing
-        from langchain_core.runnables import RunnableConfig
-        
-        config = RunnableConfig(
-            run_name=create_run_name("gauss", "stream" if stream else "generate"),
-            tags=get_langsmith_tags("gauss", stream),
-            metadata={
-                "temperature": kwargs.get("temperature", self.llm.temperature),
-                "top_p": kwargs.get("top_p", self.llm.top_p),
-                "repetition_penalty": kwargs.get("repetition_penalty", self.llm.repetition_penalty),
-                "stream": stream,
-            }
-        )
-            
         if stream:
             # Use LangChain's streaming
-            for chunk in self.llm.stream(prompt, config=config, **kwargs):
+            for chunk in self.llm.stream(prompt, **kwargs):
                 text = getattr(chunk, "text", "") or ""
                 if text:
                     yield StreamingChunk({"text": text})
             return
             
         # Use LangChain's invoke
-        result = self.llm.invoke(prompt, config=config, **kwargs)
+        result = self.llm.invoke(prompt, **kwargs)
         return result or ""
 
 

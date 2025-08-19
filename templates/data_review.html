@@ -38,6 +38,20 @@
             font-weight: bold;
             color: #2c3e50;
         }
+        .back-links {
+            position: absolute;
+            left: 30px;
+            top: 30px;
+        }
+        .back-links a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: #e7f3ff;
+        }
+        .back-links a:hover { background: #d8ecff; }
 
         .subtitle {
             font-size: 1.2rem;
@@ -207,7 +221,10 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <div class="header" style="position: relative;">
+            <div class="back-links">
+                <a href="/">← Back to Home</a>
+            </div>
             <h1 class="title">HRM Data Review</h1>
             <p class="subtitle">제품별 진단 목록 및 운영 이력 데이터 검토</p>
         </div>

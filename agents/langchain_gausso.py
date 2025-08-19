@@ -10,8 +10,9 @@ from langchain_core.language_models.llms import LLM
 from langchain_core.outputs import GenerationChunk
 
 from gausso_api import GaussOAPI
-from .langsmith_config import setup_langsmith
+ 
 
+from pydantic import PrivateAttr
 
 class GaussOLLM(LLM):
     """Custom LangChain LLM wrapper for GaussO API."""
@@ -22,15 +23,16 @@ class GaussOLLM(LLM):
     top_p: float = 0.96
     repetition_penalty: float = 1.03
     
+    _client: GaussOAPI = PrivateAttr()
+    
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        self.client = GaussOAPI(
+        self._client = GaussOAPI(
             access_key=self.access_key or os.getenv("GAUSSO_ACCESS_KEY", ""),
             secret_key=self.secret_key or os.getenv("GAUSSO_SECRET_KEY", ""),
         )
         
-        # Setup LangSmith tracing
-        setup_langsmith()
+        
 
     @property
     def _llm_type(self) -> str:
@@ -54,21 +56,8 @@ class GaussOLLM(LLM):
         **kwargs: Any,
     ) -> str:
         """Call out to GaussO API."""
-        # Log the call to LangSmith if run_manager is available
-        if run_manager:
-            run_manager.on_llm_start(
-                serialized={"name": "GaussOLLM"},
-                prompts=[prompt],
-                run_id=run_manager.run_id,
-                tags=["gausso", "custom-llm"],
-                metadata={
-                    "temperature": kwargs.get("temperature", self.temperature),
-                    "top_p": kwargs.get("top_p", self.top_p),
-                    "repetition_penalty": kwargs.get("repetition_penalty", self.repetition_penalty),
-                }
-            )
         
-        response = self.client.chat_completion(
+        response = self._client.chat_completion(
             prompt,
             stream=False,
             temperature=kwargs.get("temperature", self.temperature),
@@ -77,21 +66,12 @@ class GaussOLLM(LLM):
         )
         
         if not response:
-            if run_manager:
-                run_manager.on_llm_error(Exception("Empty response from GaussO API"))
             return ""
             
         try:
             result = response["choices"][0]["message"]["content"]
-            if run_manager:
-                run_manager.on_llm_end(
-                    response={"generations": [[{"text": result}]]},
-                    run_id=run_manager.run_id
-                )
             return result
         except (KeyError, IndexError) as e:
-            if run_manager:
-                run_manager.on_llm_error(e)
             return ""
 
     def _stream(
@@ -102,22 +82,8 @@ class GaussOLLM(LLM):
         **kwargs: Any,
     ) -> Iterator[GenerationChunk]:
         """Stream the LLM on the given prompt."""
-        # Log the streaming call to LangSmith if run_manager is available
-        if run_manager:
-            run_manager.on_llm_start(
-                serialized={"name": "GaussOLLM"},
-                prompts=[prompt],
-                run_id=run_manager.run_id,
-                tags=["gausso", "custom-llm", "streaming"],
-                metadata={
-                    "temperature": kwargs.get("temperature", self.temperature),
-                    "top_p": kwargs.get("top_p", self.top_p),
-                    "repetition_penalty": kwargs.get("repetition_penalty", self.repetition_penalty),
-                    "streaming": True,
-                }
-            )
         
-        response = self.client.chat_completion(
+        response = self._client.chat_completion(
             prompt,
             stream=True,
             temperature=kwargs.get("temperature", self.temperature),
@@ -125,17 +91,39 @@ class GaussOLLM(LLM):
             repetition_penalty=kwargs.get("repetition_penalty", self.repetition_penalty),
         )
         
+        # Fallback: if streaming response is empty, try non-streaming once
         if not response:
-            if run_manager:
-                run_manager.on_llm_error(Exception("Empty response from GaussO API"))
-            return
+            response = self._client.chat_completion(
+                prompt,
+                stream=False,
+                temperature=kwargs.get("temperature", self.temperature),
+                top_p=kwargs.get("top_p", self.top_p),
+                repetition_penalty=kwargs.get("repetition_penalty", self.repetition_penalty),
+            )
+            if not response:
+                # As a last resort, emit a single empty chunk to avoid upstream errors
+                yield GenerationChunk(text="")
+                return
             
         try:
             text = response["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as e:
-            if run_manager:
-                run_manager.on_llm_error(e)
-            return
+            # If parsing fails, try non-streaming fallback
+            response = self._client.chat_completion(
+                prompt,
+                stream=False,
+                temperature=kwargs.get("temperature", self.temperature),
+                top_p=kwargs.get("top_p", self.top_p),
+                repetition_penalty=kwargs.get("repetition_penalty", self.repetition_penalty),
+            )
+            try:
+                text = response["choices"][0]["message"]["content"] if response else ""
+            except Exception:
+                text = ""
+            if text == "":
+                # Emit a single empty chunk so that callers do not crash
+                yield GenerationChunk(text="")
+                return
             
         # Simulate streaming by splitting into lines
         full_response = ""
@@ -145,13 +133,6 @@ class GaussOLLM(LLM):
                 chunk = GenerationChunk(text=chunk_text)
                 full_response += chunk_text
                 
-                if run_manager:
-                    run_manager.on_llm_new_token(chunk.text, chunk=chunk)
                 yield chunk
         
-        # Log completion to LangSmith
-        if run_manager:
-            run_manager.on_llm_end(
-                response={"generations": [[{"text": full_response}]]},
-                run_id=run_manager.run_id
-            )
+        # Completed streaming

@@ -62,7 +62,8 @@ class DiagnosisSummarizer:
         })
         llm = build_llm(self.provider, **self.provider_kwargs)
 
-        if stream:
+        # For Gauss provider, force non-streaming and emit once
+        if stream and self.provider.lower() != "gauss":
             preview = []
             for chunk in llm.generate(prompt, stream=True):
                 text = chunk.get("text", "")
