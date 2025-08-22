@@ -9,7 +9,7 @@ from .diagnosis_summarizer import DiagnosisSummarizer
 from .op_history_summarizer import OperationHistorySummarizer
 from .guide_provider import GuideProvider
 from .retriever import GuideRetriever
-from .mcp import MCPRegistry
+from .mcp import MCPRegistry, ToolMetadata, AgentMetadata
 
 
 class Tool(Protocol):
@@ -64,17 +64,40 @@ class RootAgent:
             GuideProvider(provider=provider, **provider_kwargs),
         )
 
-        # Default tools
-        self.register_tool("guider_retriever", GuideRetriever().stream)
+        # Default tools - configure GuideRetriever with API URL from config
+        retriever_config = self.config.get("retriever", {})
+        api_base_url = retriever_config.get("api_base_url", "http://localhost:5001")
+        print(f"[RootAgent] GuideRetriever API URL configured: {api_base_url}")
+        
+        # Create GuideRetriever instance
+        guide_retriever = GuideRetriever(api_base_url=api_base_url)
+        
+        # Register as streaming tool (backward compatibility)
+        self.register_tool("guider_retriever", guide_retriever.stream)
+        
+        # Register as MCP tool with metadata
+        self.register_tool(
+            "document_retriever", 
+            guide_retriever.as_mcp_tool(),
+            metadata=guide_retriever.get_mcp_metadata()
+        )
 
     # MCP-like registry
-    def register_agent(self, name: str, agent: Any) -> None:
+    def register_agent(self, name: str, agent: Any, metadata: Optional[AgentMetadata] = None) -> None:
         self.agents[name] = agent
-        self.mcp.register_agent(name, agent)
+        self.mcp.register_agent(name, agent, metadata)
 
-    def register_tool(self, name: str, tool: Tool) -> None:
+    def register_tool(self, name: str, tool: Tool, metadata: Optional[ToolMetadata] = None) -> None:
         self.tools[name] = tool
-        self.mcp.register_tool(name, tool)
+        self.mcp.register_tool(name, tool, metadata)
+
+    def get_mcp_manifest(self) -> str:
+        """Get MCP manifest for all registered tools and agents."""
+        return self.mcp.to_mcp_manifest()
+
+    def invoke_mcp_tool(self, name: str, *args: Any, **kwargs: Any) -> Any:
+        """Invoke an MCP tool safely with error handling."""
+        return self.mcp.invoke_tool(name, *args, **kwargs)
 
     def list_capabilities(self) -> Dict[str, Any]:
         return self.mcp.list()
@@ -173,7 +196,7 @@ class RootAgent:
         """Generate customer action guide in Korean using diagnosis summary and top-3 retrieved docs.
 
         - Only operates when language == 'ko'
-        - Queries GuideRetriever API (localhost:5001) with category filter and diagnosis summary
+        - Queries GuideRetriever API with category filter and diagnosis summary
         - Uses GuideProvider with GuideGuardrail for post-processing and readability analysis
         """
         from .guardrails import GuideGuardrail

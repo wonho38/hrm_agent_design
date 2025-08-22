@@ -15,11 +15,30 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+def load_config():
+    """Load configuration from configure.json at project root."""
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), "configure.json")
+        if not os.path.exists(config_path):
+            return {"retriever": {"api_base_url": "http://localhost:5001"}}
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return {"retriever": {"api_base_url": "http://localhost:5001"}}
+        return data
+    except Exception:
+        return {"retriever": {"api_base_url": "http://localhost:5001"}}
+
 app = Flask(__name__)
 CORS(app)  # CORS 설정으로 브라우저에서 JSON 데이터 요청 허용
 
+# Configuration 로드
+config = load_config()
+retriever_config = config.get("retriever", {})
+
 # GuideRetriever API 설정
-API_BASE_URL = "http://localhost:5001"
+API_BASE_URL = retriever_config.get("api_base_url", "http://localhost:5001")
+logger.info(f"[App] GuideRetriever API URL configured: {API_BASE_URL}")
 
 # JSON 데이터를 메모리에 로드 (서버 시작 시 한 번만 로드)
 json_data = []

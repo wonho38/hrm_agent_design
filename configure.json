@@ -8,6 +8,9 @@
     "api_key": "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",
     "project": "hrm-agent",
     "endpoint": "https://api.smith.langchain.com"
+  },
+  "retriever": {
+    "api_base_url": "http://43.202.156.127:5001"
   }
 }
 
