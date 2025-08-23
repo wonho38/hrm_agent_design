@@ -2,6 +2,13 @@ HRM Agent Design
 
 가전 제품 진단·사용 이력 분석 및 가이드 제공을 위한 모듈형 에이전트 아키텍처입니다. 각 에이전트는 설정 가능한 LLM(OpenAI, Amazon Bedrock, Gauss, GaussO)을 사용하며, 결과를 스트리밍 형태로 제공합니다. Root 에이전트는 MCP 스타일 레지스트리를 통해 에이전트/툴을 오케스트레이션하고, LangSmith 트레이싱을 지원합니다.
 
+## 새로운 아키텍처 (API 분리)
+
+이제 HRM Agent는 다음과 같이 분리된 아키텍처로 구성됩니다:
+
+- **hrm_agent_api.py**: RootAgent의 주요 기능들을 RESTful API로 제공하는 Flask 기반 API 서버 (포트 8000)
+- **app.py**: 웹 UI를 제공하고 hrm_agent_api의 API들을 사용하는 웹 서버 (포트 5000)
+
 ## 핵심 기능
 - diagnosis_summarizer: 가전 진단 정보 요약
 - op_history_summarizer: 제품 사용 이력 요약
@@ -52,10 +59,93 @@ pip install -r requirements.txt
 - LangSmith(선택): `LANGCHAIN_TRACING_V2=TRUE`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`
 
 ## 빠른 시작
+
+### 1. API 서버와 웹 서버 동시 실행 (권장)
+
+두 개의 터미널을 열어서 각각 실행:
+
+**터미널 1 - API 서버 실행:**
+```bash
+python run_api_server.py
+# 또는
+python hrm_agent_api.py
+```
+
+**터미널 2 - 웹 서버 실행:**
+```bash
+python run_web_server.py  
+# 또는
+python app.py
+```
+
+그 후 브라우저에서 `http://localhost:5000`으로 접속하세요.
+
+### 2. 통합 테스트 실행
+
+```bash
+python test_api_integration.py
+```
+
+### 3. 기존 방식 (단일 실행)
 ```bash
 python main.py
 ```
 - 진단 요약, 사용 이력 요약, 가이드 생성, 리트리버 호출을 스트리밍으로 출력합니다.
+
+## API 엔드포인트
+
+HRM Agent API 서버 (`http://localhost:8000`)는 다음 엔드포인트들을 제공합니다:
+
+### 헬스 체크
+- `GET /health` - API 서버 상태 확인
+
+### 기능 조회
+- `GET /api/capabilities` - 등록된 에이전트와 도구 목록 조회
+- `GET /api/mcp/manifest` - MCP 매니페스트 조회
+
+### 진단 요약
+- `POST /api/diagnosis` - 진단 요약 생성 (일반)
+- `POST /api/diagnosis/stream` - 진단 요약 생성 (스트리밍)
+
+### 운영 이력 요약  
+- `POST /api/operation-history` - 운영 이력 요약 생성 (일반)
+- `POST /api/operation-history/stream` - 운영 이력 요약 생성 (스트리밍)
+
+### 고객 조치 가이드
+- `POST /api/actions-guide` - 고객 조치 가이드 생성 (일반, 한국어 전용)
+- `POST /api/actions-guide/stream` - 고객 조치 가이드 생성 (스트리밍, 한국어 전용)
+
+### 도구 호출
+- `POST /api/tools/<tool_name>` - 등록된 도구 호출 (일반)
+- `POST /api/tools/<tool_name>/stream` - 등록된 도구 호출 (스트리밍)
+- `POST /api/mcp/tools/<tool_name>` - MCP 도구 안전 호출
+
+### API 사용 예시
+
+```bash
+# 진단 요약 생성
+curl -X POST http://localhost:8000/api/diagnosis \
+  -H "Content-Type: application/json" \
+  -d '{
+    "analytics": {
+      "deviceType": "AC",
+      "diagnosisLists": [{"category": "cooling", "diagnosis": "냉각 효율 저하"}]
+    },
+    "language": "ko",
+    "llm_provider": "openai"
+  }'
+
+# 스트리밍 진단 요약 생성
+curl -X POST http://localhost:8000/api/diagnosis/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "analytics": {
+      "deviceType": "AC", 
+      "diagnosisLists": [{"category": "cooling", "diagnosis": "냉각 효율 저하"}]
+    },
+    "language": "ko"
+  }'
+```
 
 ## 프로그래밍 사용법
 ### Root 에이전트 사용

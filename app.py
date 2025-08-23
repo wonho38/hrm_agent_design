@@ -4,7 +4,6 @@ from flask import Flask, render_template, jsonify, send_from_directory, request,
 import json
 import os
 from flask_cors import CORS
-from agents.root_agent import RootAgent
 import logging
 
 # 로깅 설정
@@ -36,15 +35,14 @@ CORS(app)  # CORS 설정으로 브라우저에서 JSON 데이터 요청 허용
 config = load_config()
 retriever_config = config.get("retriever", {})
 
-# GuideRetriever API 설정
+# API 서버 설정
 API_BASE_URL = retriever_config.get("api_base_url", "http://localhost:5001")
+HRM_AGENT_API_URL = "http://localhost:8000"  # HRM Agent API 서버 URL
 logger.info(f"[App] GuideRetriever API URL configured: {API_BASE_URL}")
+logger.info(f"[App] HRM Agent API URL configured: {HRM_AGENT_API_URL}")
 
 # JSON 데이터를 메모리에 로드 (서버 시작 시 한 번만 로드)
 json_data = []
-
-# RootAgent 인스턴스 (전역으로 관리)
-root_agent = None
 
 def load_json_data():
     """sample_original.json 파일을 로드합니다."""
@@ -61,15 +59,14 @@ def load_json_data():
         print(f"JSON 데이터 로드 오류: {e}")
         json_data = []
 
-def initialize_root_agent():
-    """RootAgent를 초기화합니다."""
-    global root_agent
+def check_api_server_health():
+    """HRM Agent API 서버의 상태를 확인합니다."""
     try:
-        root_agent = RootAgent()
-        print("RootAgent 초기화 완료")
+        response = requests.get(f"{HRM_AGENT_API_URL}/health", timeout=5)
+        return response.status_code == 200
     except Exception as e:
-        print(f"RootAgent 초기화 오류: {e}")
-        root_agent = None
+        logger.error(f"API 서버 상태 확인 실패: {e}")
+        return False
 
 def truncate_json_data(data, max_length=1000):
     """JSON 데이터를 문자열로 변환하고 필요시 길이를 제한합니다."""
@@ -182,8 +179,9 @@ def serve_data_files(filename):
 def stream_diagnosis(item_id):
     """특정 ID의 진단 데이터를 스트리밍으로 요약합니다."""
     try:
-        if not root_agent:
-            return jsonify({'error': 'RootAgent가 초기화되지 않았습니다.'}), 500
+        # HRM Agent API 서버 상태 확인
+        if not check_api_server_health():
+            return jsonify({'error': 'HRM Agent API 서버에 연결할 수 없습니다.'}), 503
             
         # 언어 및 LLM 설정 가져오기
         language = request.args.get('language', 'ko')
@@ -200,20 +198,31 @@ def stream_diagnosis(item_id):
         
         def generate():
             try:
-                # RootAgent를 새 설정으로 재초기화 (선택된 LLM 사용)
-                agent = RootAgent(provider_override=llm_provider)
+                # HRM Agent API 서버에 스트리밍 요청
+                api_payload = {
+                    "analytics": analytics,
+                    "language": language,
+                    "llm_provider": llm_provider
+                }
                 
-                # 초기 하트비트 전송 (버퍼링 방지 및 즉시 표시 유도)
-                yield f"data: {json.dumps({'chunk': '', 'done': False})}\n\n"
-
-                # 스트리밍으로 진단 요약 생성
-                for chunk in agent.run_diagnosis(analytics, language=language):
-                    yield f"data: {json.dumps({'chunk': chunk, 'done': False})}\n\n"
+                response = requests.post(
+                    f"{HRM_AGENT_API_URL}/api/diagnosis/stream",
+                    json=api_payload,
+                    stream=True,
+                    timeout=300
+                )
                 
-                # 완료 신호
-                yield f"data: {json.dumps({'chunk': '', 'done': True})}\n\n"
+                if response.status_code != 200:
+                    yield f"data: {json.dumps({'error': 'API 서버 오류', 'done': True})}\n\n"
+                    return
+                
+                # API 서버로부터 스트리밍 응답을 그대로 전달
+                for line in response.iter_lines(decode_unicode=True):
+                    if line.startswith('data: '):
+                        yield f"{line}\n\n"
                 
             except Exception as e:
+                logger.error(f"스트리밍 진단 요약 중 오류: {e}")
                 yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
         
         return Response(
@@ -233,8 +242,9 @@ def stream_diagnosis(item_id):
 def stream_operation_history(item_id):
     """특정 ID의 운영 이력 데이터를 스트리밍으로 요약합니다."""
     try:
-        if not root_agent:
-            return jsonify({'error': 'RootAgent가 초기화되지 않았습니다.'}), 500
+        # HRM Agent API 서버 상태 확인
+        if not check_api_server_health():
+            return jsonify({'error': 'HRM Agent API 서버에 연결할 수 없습니다.'}), 503
             
         # 언어 및 LLM 설정 가져오기
         language = request.args.get('language', 'ko')
@@ -251,20 +261,31 @@ def stream_operation_history(item_id):
         
         def generate():
             try:
-                # RootAgent를 새 설정으로 재초기화 (선택된 LLM 사용)
-                agent = RootAgent(provider_override=llm_provider)
+                # HRM Agent API 서버에 스트리밍 요청
+                api_payload = {
+                    "operation_history": operation_history,
+                    "language": language,
+                    "llm_provider": llm_provider
+                }
                 
-                # 초기 하트비트 전송 (버퍼링 방지 및 즉시 표시 유도)
-                yield f"data: {json.dumps({'chunk': '', 'done': False})}\n\n"
-
-                # 스트리밍으로 운영 이력 요약 생성
-                for chunk in agent.run_op_history(operation_history, language=language):
-                    yield f"data: {json.dumps({'chunk': chunk, 'done': False})}\n\n"
+                response = requests.post(
+                    f"{HRM_AGENT_API_URL}/api/operation-history/stream",
+                    json=api_payload,
+                    stream=True,
+                    timeout=300
+                )
                 
-                # 완료 신호
-                yield f"data: {json.dumps({'chunk': '', 'done': True})}\n\n"
+                if response.status_code != 200:
+                    yield f"data: {json.dumps({'error': 'API 서버 오류', 'done': True})}\n\n"
+                    return
+                
+                # API 서버로부터 스트리밍 응답을 그대로 전달
+                for line in response.iter_lines(decode_unicode=True):
+                    if line.startswith('data: '):
+                        yield f"{line}\n\n"
                 
             except Exception as e:
+                logger.error(f"스트리밍 운영 이력 요약 중 오류: {e}")
                 yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
         
         return Response(
@@ -289,8 +310,9 @@ def guide_retriever():
 def stream_actions_guide(item_id):
     """진단 결과 기반 고객 조치 가이드를 스트리밍 생성 (한국어 전용)."""
     try:
-        if not root_agent:
-            return jsonify({'error': 'RootAgent가 초기화되지 않았습니다.'}), 500
+        # HRM Agent API 서버 상태 확인
+        if not check_api_server_health():
+            return jsonify({'error': 'HRM Agent API 서버에 연결할 수 없습니다.'}), 503
 
         # POST 요청에서 데이터 가져오기
         if request.method == 'POST':
@@ -325,23 +347,33 @@ def stream_actions_guide(item_id):
 
         def generate():
             try:
-                print(f"[stream_actions_guide] 시작 - category: {final_category}, diagnosis_summary: {diagnosis_summary[:100]}...")
-                agent = RootAgent(provider_override=root_agent.provider)
-                # 초기 하트비트
-                yield f"data: {json.dumps({'chunk': '', 'done': False})}\n\n"
+                logger.info(f"[stream_actions_guide] 시작 - category: {final_category}, diagnosis_summary: {diagnosis_summary[:100]}...")
                 
-                chunk_count = 0
-                for chunk in agent.run_actions_guide(diagnosis_summary, category=final_category, language='ko'):
-                    chunk_count += 1
-                    print(f"[stream_actions_guide] 청크 {chunk_count}: {chunk[:50]}...")
-                    yield f"data: {json.dumps({'chunk': chunk, 'done': False})}\n\n"
+                # HRM Agent API 서버에 스트리밍 요청
+                api_payload = {
+                    "diagnosis_summary": diagnosis_summary,
+                    "category": final_category,
+                    "language": language
+                }
                 
-                print(f"[stream_actions_guide] 완료 - 총 {chunk_count}개 청크")
-                yield f"data: {json.dumps({'chunk': '', 'done': True})}\n\n"
+                response = requests.post(
+                    f"{HRM_AGENT_API_URL}/api/actions-guide/stream",
+                    json=api_payload,
+                    stream=True,
+                    timeout=300
+                )
+                
+                if response.status_code != 200:
+                    yield f"data: {json.dumps({'error': 'API 서버 오류', 'done': True})}\n\n"
+                    return
+                
+                # API 서버로부터 스트리밍 응답을 그대로 전달
+                for line in response.iter_lines(decode_unicode=True):
+                    if line.startswith('data: '):
+                        yield f"{line}\n\n"
+                
             except Exception as e:
-                print(f"[stream_actions_guide] 오류: {str(e)}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"스트리밍 고객 조치 가이드 중 오류: {e}")
                 yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
 
         return Response(
@@ -480,19 +512,26 @@ def health():
     """헬스 체크"""
     try:
         # GuideRetriever API 서버 상태 확인
-        response = requests.get(f"{API_BASE_URL}/health", timeout=5)
-        api_status = response.status_code == 200
+        retriever_response = requests.get(f"{API_BASE_URL}/health", timeout=5)
+        retriever_status = retriever_response.status_code == 200
+        
+        # HRM Agent API 서버 상태 확인
+        hrm_agent_status = check_api_server_health()
         
         return jsonify({
             "web_server": "healthy",
-            "api_server": "healthy" if api_status else "unhealthy",
-            "api_url": API_BASE_URL
+            "guide_retriever_api": "healthy" if retriever_status else "unhealthy",
+            "guide_retriever_url": API_BASE_URL,
+            "hrm_agent_api": "healthy" if hrm_agent_status else "unhealthy",
+            "hrm_agent_api_url": HRM_AGENT_API_URL
         })
     except:
         return jsonify({
             "web_server": "healthy",
-            "api_server": "unreachable",
-            "api_url": API_BASE_URL
+            "guide_retriever_api": "unreachable",
+            "guide_retriever_url": API_BASE_URL,
+            "hrm_agent_api": "unreachable",
+            "hrm_agent_api_url": HRM_AGENT_API_URL
         })
 
 
@@ -509,13 +548,20 @@ def internal_error(error):
     return render_template('500.html'), 500
 
 if __name__ == '__main__':
-    # 서버 시작 시 JSON 데이터 및 RootAgent 로드
+    # 서버 시작 시 JSON 데이터 로드
     load_json_data()
-    initialize_root_agent()
+    
+    # HRM Agent API 서버 상태 확인
+    if check_api_server_health():
+        logger.info("HRM Agent API 서버에 연결되었습니다.")
+    else:
+        logger.warning("HRM Agent API 서버에 연결할 수 없습니다. API 서버를 먼저 시작해주세요.")
     
     # 개발 모드로 Flask 서버 실행
-    print("HRM AI Agent 서버를 시작합니다...")
+    print("HRM AI Agent 웹 서버를 시작합니다...")
     print("브라우저에서 http://localhost:5000 으로 접속하세요.")
+    print(f"HRM Agent API: {HRM_AGENT_API_URL}")
+    print(f"GuideRetriever API: {API_BASE_URL}")
     
     app.run(
         host='0.0.0.0',  # 모든 네트워크 인터페이스에서 접근 허용
