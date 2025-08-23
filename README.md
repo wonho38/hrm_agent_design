@@ -1,235 +1,418 @@
-HRM Agent Design
+# HRM Agent Design
 
-가전 제품 진단·사용 이력 분석 및 가이드 제공을 위한 모듈형 에이전트 아키텍처입니다. 각 에이전트는 설정 가능한 LLM(OpenAI, Amazon Bedrock, Gauss, GaussO)을 사용하며, 결과를 스트리밍 형태로 제공합니다. Root 에이전트는 MCP 스타일 레지스트리를 통해 에이전트/툴을 오케스트레이션하고, LangSmith 트레이싱을 지원합니다.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![API Server](https://img.shields.io/badge/API-REST-orange.svg)](http://localhost:8000)
+[![Web UI](https://img.shields.io/badge/Web%20UI-Flask-red.svg)](http://localhost:5000)
 
-## 새로운 아키텍처 (API 분리)
+가전 제품 진단·사용 이력 분석 및 가이드 제공을 위한 **모듈형 AI 에이전트 아키텍처**입니다. 각 에이전트는 설정 가능한 LLM(OpenAI, Amazon Bedrock, Gauss, GaussO)을 사용하며, 결과를 **실시간 스트리밍**으로 제공합니다. Root 에이전트는 **MCP 스타일 레지스트리**를 통해 에이전트/툴을 오케스트레이션하고, **LangSmith 추적**을 지원합니다.
 
-이제 HRM Agent는 다음과 같이 분리된 아키텍처로 구성됩니다:
+## 🏗️ 마이크로서비스 아키텍처
 
-- **hrm_agent_api.py**: RootAgent의 주요 기능들을 RESTful API로 제공하는 Flask 기반 API 서버 (포트 8000)
-- **app.py**: 웹 UI를 제공하고 hrm_agent_api의 API들을 사용하는 웹 서버 (포트 5000)
+HRM Agent는 확장 가능한 **마이크로서비스 아키텍처**로 구성됩니다:
 
-## 핵심 기능
-- diagnosis_summarizer: 가전 진단 정보 요약
-- op_history_summarizer: 제품 사용 이력 요약
-- guide_provider: 진단/이력 요약 기반 조치 가이드 생성
-- guider_retriever(tool): 키워드/코드 기반 간단 가이드 검색(stream)
-- Root 에이전트: 위 에이전트/툴을 통합 실행, MCP 스타일 확장 지원
-- PromptBuilder: LLM·에이전트별 프롬프트 구성(교체/확장 가능)
-- Guardrail(더미): Pre-/Post- 가드레일 훅 인터페이스 제공
+- **🚀 HRM Agent API** (`hrm_agent_api.py`): RootAgent의 주요 기능들을 RESTful API로 제공하는 Flask 기반 API 서버 (포트 8000)
+- **🌐 Web Application** (`app.py`): 사용자 친화적인 웹 UI를 제공하고 HRM Agent API를 사용하는 웹 서버 (포트 5000)
+- **📊 Guide Retriever API**: 문서 검색 및 가이드 제공 서비스 (포트 5001)
 
-## 레퍼런스 코드 연계
-- 진단 요약: `reference_code/analytics_gauss.py`, `reference_code/analytics_amazon.py`
-- 사용 이력 요약: `reference_code/operation_history_gauss.py`, `reference_code/operation_history_amazon.py`, `reference_code/operation_history_openai.py`
+## ✨ 핵심 기능
 
-## 디렉터리 구조
+### 🤖 AI 에이전트들
+- **📋 DiagnosisSummarizer**: 가전 진단 정보 분석 및 요약
+- **📈 OperationHistorySummarizer**: 제품 사용 이력 분석 및 패턴 파악
+- **📝 GuideProvider**: 진단/이력 기반 맞춤형 조치 가이드 생성
+- **🖼️ ImageAnalyzer**: 이미지 기반 결함 탐지 및 증상 분석 (계획)
+
+### 🛠️ 지원 시스템
+- **🎯 RootAgent**: 모든 에이전트/툴을 통합 실행하는 중앙 오케스트레이터
+- **🔧 MCP Registry**: 동적 에이전트/도구 등록 및 관리 시스템
+- **📄 PromptBuilder**: LLM별, 에이전트별 최적화된 프롬프트 구성
+- **🛡️ Guardrails**: 입출력 검증 및 후처리 시스템
+- **🔍 GuideRetriever**: 키워드 기반 실시간 가이드 검색 도구
+- **📊 Logger**: 구조화된 이벤트 로깅 및 추적 시스템
+
+## 📁 프로젝트 구조
+
 ```
 hrm_agent_design/
-  agents/
-    __init__.py
-    llm_providers.py      # OpenAI / Bedrock / Gauss / GaussO 어댑터(스트리밍 지원)
-    prompt_builder.py     # 에이전트/LLM별 프롬프트 빌더
-    guardrails.py         # Pre/Post 가드레일 더미 클래스
-    retriever.py          # guider_retriever 도구(간단 in-memory)
-    diagnosis_summarizer.py
-    op_history_summarizer.py
-    guide_provider.py
-    mcp.py                # MCP 유사 레지스트리(플러그인형 확장)
-  reference_code/         # 레퍼런스 스크립트
-  data/
-  main.py                 # 실행 데모(스트리밍 출력)
-  requirements.txt
-  README.md
+├── 🚀 API & Web Servers
+│   ├── hrm_agent_api.py          # RESTful API 서버 (포트 8000)
+│   ├── app.py                    # 웹 UI 서버 (포트 5000)
+│   ├── run_api_server.py         # API 서버 실행 스크립트
+│   ├── run_web_server.py         # 웹 서버 실행 스크립트
+│   └── test_api_integration.py   # 통합 테스트 스크립트
+│
+├── 🤖 AI Agents & Core
+│   └── agents/
+│       ├── root_agent.py         # 중앙 오케스트레이터
+│       ├── mcp.py                # MCP 레지스트리 시스템
+│       ├── diagnosis_summarizer.py
+│       ├── op_history_summarizer.py
+│       ├── guide_provider.py
+│       ├── image_analyzer.py     # 이미지 분석 에이전트
+│       ├── llm_providers.py      # LLM 프로바이더 팩토리
+│       ├── llm_client_*.py       # 개별 LLM 클라이언트들
+│       ├── prompt_builder.py     # 프롬프트 구성 시스템
+│       ├── guardrails.py         # 검증 & 후처리 시스템
+│       ├── retriever.py          # 문서 검색 도구
+│       └── logger.py             # 구조화된 로깅 시스템
+│
+├── 🌐 Web Interface
+│   └── templates/
+│       ├── index.html            # 메인 대시보드
+│       ├── data_review.html      # 데이터 검토 페이지
+│       ├── guide_retriever.html  # 가이드 검색 페이지
+│       └── prompt_editor.html    # 프롬프트 편집기
+│
+├── 📊 Data & Configuration
+│   ├── data/
+│   │   └── sample_original.json  # 샘플 진단 데이터
+│   ├── configure.json            # 시스템 설정
+│   ├── prompt.json               # 프롬프트 템플릿
+│   └── hrm_agent_log.json        # 이벤트 로그
+│
+├── 📚 Documentation
+│   └── documents/
+│       ├── README.md             # 문서 가이드
+│       ├── context_diagram.md    # 컨텍스트 다이어그램
+│       ├── component_connector_view.md  # C&C 뷰
+│       ├── module_view.md        # 모듈 뷰
+│       ├── deployment_view.md    # 배포 뷰
+│       ├── class_diagram.md      # 클래스 다이어그램
+│       ├── sequence_diagram.md   # 시퀀스 다이어그램
+│       ├── design_patterns.md    # 디자인 패턴 정리
+│       ├── architecture_overview.md     # 아키텍처 개요
+│       └── api_documentation.md  # API 문서
+│
+└── 🛠️ Development & Legacy
+    ├── main.py                   # 단일 실행 데모
+    ├── requirements.txt          # Python 의존성
+    ├── MCP_DOCUMENT_RETRIEVER_GUIDE.md
+    └── reference_code/           # 레퍼런스 구현
 ```
 
-## 요구 사항
-- Python 3.9+
-- 네트워크 접근(해당 LLM API 사용 시)
+## 🔧 시스템 요구사항
 
-## 설치
+### 기본 요구사항
+- **Python**: 3.9 이상
+- **메모리**: 최소 4GB RAM (권장 8GB)
+- **네트워크**: 인터넷 연결 (LLM API 사용 시)
+- **포트**: 5000 (웹 UI), 8000 (API 서버), 5001 (가이드 검색)
+
+### 지원되는 LLM 프로바이더
+- **OpenAI**: GPT-4, GPT-4 Turbo, GPT-4V (이미지 분석)
+- **Amazon Bedrock**: Claude, Titan 모델
+- **Gauss**: 전용 LLM 서비스
+- **GaussO**: Gauss Vision (이미지 분석 지원)
+
+## 🚀 빠른 설치
+
+### 1. 저장소 클론 및 의존성 설치
 ```bash
+git clone <repository-url>
+cd hrm_agent_design
 pip install -r requirements.txt
 ```
 
-## 환경 변수 설정
-- OpenAI: `OPENAI_API_KEY`
-- Amazon Bedrock: `AWS_REGION` 또는 `AWS_DEFAULT_REGION` (자격증명은 표준 AWS 방식)
-- Gauss: `GAUSS_ACCESS_KEY`, `GAUSS_SECRET_KEY`
-- GaussO: `GAUSSO_ACCESS_KEY`, `GAUSSO_SECRET_KEY`
-- LangSmith(선택): `LANGCHAIN_TRACING_V2=TRUE`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`
-
-## 빠른 시작
-
-### 1. API 서버와 웹 서버 동시 실행 (권장)
-
-두 개의 터미널을 열어서 각각 실행:
-
-**터미널 1 - API 서버 실행:**
+### 2. 환경 변수 설정
+`.env` 파일을 생성하거나 시스템 환경 변수로 설정:
 ```bash
+# OpenAI (선택)
+export OPENAI_API_KEY="your-openai-api-key"
+
+# AWS Bedrock (선택)
+export AWS_REGION="us-east-1"
+export AWS_ACCESS_KEY_ID="your-aws-access-key"
+export AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
+
+# Gauss (선택)
+export GAUSS_ACCESS_KEY="your-gauss-access-key"
+export GAUSS_SECRET_KEY="your-gauss-secret-key"
+
+# GaussO (선택)
+export GAUSSO_ACCESS_KEY="your-gausso-access-key"
+export GAUSSO_SECRET_KEY="your-gausso-secret-key"
+
+# LangSmith 추적 (선택)
+export LANGCHAIN_TRACING_V2="true"
+export LANGCHAIN_API_KEY="your-langsmith-api-key"
+export LANGCHAIN_PROJECT="hrm-agent"
+```
+
+## 🎯 빠른 시작
+
+### 방법 1: 마이크로서비스 모드 (권장) 🌟
+
+**단계 1**: API 서버 시작
+```bash
+# 터미널 1
 python run_api_server.py
 # 또는
 python hrm_agent_api.py
 ```
 
-**터미널 2 - 웹 서버 실행:**
+**단계 2**: 웹 서버 시작  
 ```bash
-python run_web_server.py  
+# 터미널 2
+python run_web_server.py
 # 또는
 python app.py
 ```
 
-그 후 브라우저에서 `http://localhost:5000`으로 접속하세요.
-
-### 2. 통합 테스트 실행
-
-```bash
-python test_api_integration.py
+**단계 3**: 브라우저에서 접속
+```
+🌐 웹 UI: http://localhost:5000
+🚀 API 문서: http://localhost:8000/health
 ```
 
-### 3. 기존 방식 (단일 실행)
+### 방법 2: 통합 테스트 실행 🧪
+
+```bash
+# 시스템 전체 테스트
+python test_api_integration.py
+
+# 개별 컴포넌트 테스트
+python -m pytest agents/test_*.py
+```
+
+### 방법 3: 단일 데모 모드 (레거시) 🔧
 ```bash
 python main.py
 ```
-- 진단 요약, 사용 이력 요약, 가이드 생성, 리트리버 호출을 스트리밍으로 출력합니다.
+> 진단 요약, 사용 이력 요약, 가이드 생성을 순차적으로 실행합니다.
 
-## API 엔드포인트
+## 🔗 API 엔드포인트 개요
 
-HRM Agent API 서버 (`http://localhost:8000`)는 다음 엔드포인트들을 제공합니다:
+HRM Agent API (`http://localhost:8000`)는 RESTful API를 제공합니다:
 
-### 헬스 체크
-- `GET /health` - API 서버 상태 확인
+| 카테고리 | 엔드포인트 | 기능 |
+|---------|-----------|------|
+| **🏥 헬스 체크** | `GET /health` | 서버 상태 확인 |
+| **📋 진단 분석** | `POST /api/diagnosis/stream` | 실시간 진단 요약 |
+| **📈 이력 분석** | `POST /api/operation-history/stream` | 실시간 운영 이력 분석 |
+| **📝 가이드 생성** | `POST /api/actions-guide/stream` | 실시간 조치 가이드 (한국어) |
+| **🖼️ 이미지 분석** | `POST /api/image-analysis/stream` | 실시간 이미지 결함 분석 (계획) |
+| **🔧 도구 관리** | `GET /api/capabilities` | 사용 가능한 에이전트/도구 조회 |
+| **🛠️ MCP 도구** | `POST /api/mcp/tools/<name>` | MCP 도구 안전 호출 |
 
-### 기능 조회
-- `GET /api/capabilities` - 등록된 에이전트와 도구 목록 조회
-- `GET /api/mcp/manifest` - MCP 매니페스트 조회
+> 📖 **상세 API 문서**: [`documents/api_documentation.md`](documents/api_documentation.md)
 
-### 진단 요약
-- `POST /api/diagnosis` - 진단 요약 생성 (일반)
-- `POST /api/diagnosis/stream` - 진단 요약 생성 (스트리밍)
-
-### 운영 이력 요약  
-- `POST /api/operation-history` - 운영 이력 요약 생성 (일반)
-- `POST /api/operation-history/stream` - 운영 이력 요약 생성 (스트리밍)
-
-### 고객 조치 가이드
-- `POST /api/actions-guide` - 고객 조치 가이드 생성 (일반, 한국어 전용)
-- `POST /api/actions-guide/stream` - 고객 조치 가이드 생성 (스트리밍, 한국어 전용)
-
-### 도구 호출
-- `POST /api/tools/<tool_name>` - 등록된 도구 호출 (일반)
-- `POST /api/tools/<tool_name>/stream` - 등록된 도구 호출 (스트리밍)
-- `POST /api/mcp/tools/<tool_name>` - MCP 도구 안전 호출
-
-### API 사용 예시
+### 빠른 API 테스트
 
 ```bash
-# 진단 요약 생성
-curl -X POST http://localhost:8000/api/diagnosis \
-  -H "Content-Type: application/json" \
-  -d '{
-    "analytics": {
-      "deviceType": "AC",
-      "diagnosisLists": [{"category": "cooling", "diagnosis": "냉각 효율 저하"}]
-    },
-    "language": "ko",
-    "llm_provider": "openai"
-  }'
+# 서버 상태 확인
+curl http://localhost:8000/health
 
-# 스트리밍 진단 요약 생성
+# 진단 요약 (스트리밍)
 curl -X POST http://localhost:8000/api/diagnosis/stream \
   -H "Content-Type: application/json" \
-  -d '{
-    "analytics": {
-      "deviceType": "AC", 
-      "diagnosisLists": [{"category": "cooling", "diagnosis": "냉각 효율 저하"}]
-    },
-    "language": "ko"
-  }'
+  -d '{"analytics": {"deviceType": "AC", "diagnosisLists": []}, "language": "ko"}'
 ```
 
-## 프로그래밍 사용법
-### Root 에이전트 사용
+## 💻 프로그래밍 가이드
+
+### Python SDK 사용법
+
 ```python
 from agents.root_agent import RootAgent
 
+# RootAgent 초기화 (설정 파일 기반)
 root = RootAgent()
-print(root.list_capabilities())  # {'agents': [...], 'tools': [...]} 
 
-# 스트리밍 실행 예시
-for chunk in root.run_diagnosis({"deviceType": "AC", "diagnosisLists": []}, language="ko"):
-    print(chunk, end="")
+# 또는 특정 LLM 프로바이더 지정
+root = RootAgent(provider_override="openai", 
+                provider_kwargs_override={"model": "gpt-4"})
 
-for chunk in root.run_op_history({"events": [{"t":0,"temp":8.5}]}, language="both"):
-    print(chunk, end="")
+# 사용 가능한 기능 확인
+capabilities = root.list_capabilities()
+print(f"에이전트: {list(capabilities['agents'].keys())}")
+print(f"도구: {list(capabilities['tools'].keys())}")
 
-for chunk in root.run_guide("Cooling inefficiency.", "Stable ops.", language="en"):
-    print(chunk, end="")
+# 🔥 실시간 스트리밍 진단
+for chunk in root.run_diagnosis(
+    {"deviceType": "AC", "diagnosisLists": [...]}, 
+    language="ko"
+):
+    print(chunk, end="", flush=True)
 
-# retriever tool
-for chunk in root.call_tool("guider_retriever", "Cooling", top_k=3):
-    print(chunk, end="")
+# 📊 운영 이력 분석
+for chunk in root.run_op_history(
+    {"events": [{"timestamp": "2024-01-01", "temp": 22.5}]},
+    language="ko"
+):
+    print(chunk, end="", flush=True)
+
+# 📝 맞춤형 조치 가이드 (한국어 전용)
+for chunk in root.run_actions_guide(
+    diagnosis_summary="냉각 효율 저하 감지",
+    category="AC",
+    language="ko"
+):
+    print(chunk, end="", flush=True)
 ```
 
-### 개별 에이전트 직접 사용
+### 개별 에이전트 활용
+
 ```python
 from agents.diagnosis_summarizer import DiagnosisSummarizer
-from agents.op_history_summarizer import OperationHistorySummarizer
-from agents.guide_provider import GuideProvider
+from agents.image_analyzer import ImageAnalyzer
 
-# LLM 프로바이더 변경 가능: 'openai' | 'bedrock' | 'gauss' | 'gausso'
-diagnosis = DiagnosisSummarizer(provider="gauss")
-for chunk in diagnosis.summarize({"deviceType": "Washer", "diagnosisLists": []}, language="ko", stream=True):
-    print(chunk, end="")
+# 🎯 특정 LLM으로 진단 에이전트 생성
+diagnosis_agent = DiagnosisSummarizer(
+    provider="openai",
+    model="gpt-4",
+    api_key="your-api-key"
+)
 
-op_hist = OperationHistorySummarizer(provider="bedrock", region="ap-northeast-2")
-for chunk in op_hist.summarize({"events": []}, language="both", stream=True):
-    print(chunk, end="")
+# 🖼️ 이미지 분석 에이전트 (GPT-4V 활용)
+image_agent = ImageAnalyzer(
+    provider="openai",
+    model="gpt-4-vision-preview"
+)
 
-guide = GuideProvider(provider="openai")
-for chunk in guide.provide("Diagnosis summary...", "Op summary...", language="en", stream=True):
-    print(chunk, end="")
+# 이미지 분석 실행
+with open("product_image.jpg", "rb") as f:
+    image_data = f.read()
+    
+result = image_agent.analyze_single_image(
+    image_data=image_data,
+    filename="product_image.jpg",
+    analysis_type="DEFECT_DETECTION",
+    language="ko"
+)
 ```
 
-## LLM 프로바이더 설정
-각 에이전트 생성자에 `provider`와 관련 파라미터를 전달하여 설정합니다.
-- OpenAI: `provider="openai"`, 추가: `model`, `api_key`
-- Bedrock: `provider="bedrock"`, 추가: `model_id`, `region`
-- Gauss: `provider="gauss"`, 추가: `access_key`, `secret_key`
-- GaussO: `provider="gausso"`, 추가: `access_key`, `secret_key`
+## 🎨 고급 설정 및 커스터마이징
 
-예: 
+### LLM 프로바이더 설정
+
+| 프로바이더 | 설정 방법 | 추가 매개변수 |
+|-----------|----------|-------------|
+| **OpenAI** | `provider="openai"` | `model`, `api_key`, `temperature` |
+| **Bedrock** | `provider="bedrock"` | `model_id`, `region`, `max_tokens` |
+| **Gauss** | `provider="gauss"` | `access_key`, `secret_key` |
+| **GaussO** | `provider="gausso"` | `access_key`, `secret_key` |
+
 ```python
-op_hist = OperationHistorySummarizer(provider="openai", model="gpt-4o-mini")
+# 예시: 고급 설정
+agent = DiagnosisSummarizer(
+    provider="openai",
+    model="gpt-4-turbo",
+    temperature=0.3,
+    max_tokens=2000
+)
 ```
 
-## 프롬프트 커스터마이징
-- `agents/prompt_builder.py`의 `PromptBuilder`를 수정하거나 상속하여 프롬프트 규칙을 변경할 수 있습니다.
-- 언어 파라미터는 `language`(기본 `ko`), `both` 지정 시 영문/국문 모두 출력하도록 힌트를 제공합니다.
+### 프롬프트 엔지니어링
 
-## 가드레일(더미)
-- `agents/guardrails.py`는 함수 시그니처만 있는 더미 클래스입니다.
-- 실제 사용 시 `pre_guard`/`post_guard`에 검증·필터링 로직을 구현해 주십시오.
+```python
+from agents.prompt_builder import PromptBuilder
 
-## MCP 스타일 확장
-- Root 에이전트는 내부 `MCPRegistry`를 통해 에이전트/툴을 등록합니다.
+class CustomPromptBuilder(PromptBuilder):
+    def build_diagnosis_prompt(self, device_type, diagnosis_text, provider, language):
+        # 커스텀 프롬프트 로직
+        return super().build_diagnosis_prompt(device_type, diagnosis_text, provider, language)
+
+# 커스텀 프롬프트 빌더 사용
+root = RootAgent()
+root.prompt_builder = CustomPromptBuilder()
+```
+
+### 보안 가드레일 구현
+
+```python
+from agents.guardrails import Guardrail
+
+class ProductionGuardrail(Guardrail):
+    def pre_guard(self, payload: dict) -> dict:
+        # 입력 데이터 검증 및 정제
+        if not payload.get("deviceType"):
+            raise ValueError("deviceType is required")
+        return payload
+    
+    def post_guard(self, output: str) -> str:
+        # 출력 결과 필터링 및 검증
+        return self.remove_sensitive_info(output)
+```
+
+## 🔧 확장 가능한 아키텍처
+
+### MCP 스타일 플러그인 시스템
+
 ```python
 from agents.root_agent import RootAgent
+from agents.mcp import AgentMetadata, ToolMetadata
 
 root = RootAgent()
-root.register_agent("my_agent", object())
-root.register_tool("my_tool", lambda q: (y for y in ["hit1\n", "hit2\n"]))
-print(root.list_capabilities())
+
+# 커스텀 에이전트 등록
+class CustomAgent:
+    def process(self, data, **kwargs):
+        yield f"Processing {data}"
+
+root.register_agent(
+    "custom_agent", 
+    CustomAgent(),
+    metadata=AgentMetadata(
+        name="Custom Agent",
+        description="사용자 정의 분석 에이전트",
+        capabilities=["analysis", "reporting"]
+    )
+)
+
+# 커스텀 도구 등록
+def custom_tool(query: str, **kwargs):
+    return f"Tool result for: {query}"
+
+root.register_tool("custom_tool", custom_tool)
 ```
 
-## 스트리밍 동작
-- OpenAI: SDK의 스트리밍 이벤트를 통해 청크를 방출합니다.
-- Bedrock/Gauss/GaussO: 예제에서는 전체 응답 수신 후 줄 단위 청크로 쪼개는 유사 스트리밍을 제공합니다(실 서비스에서는 이벤트 스트리밍 연동 권장).
+## 📚 문서 및 아키텍처
 
-## 주의 사항
-- API 키/자격증명을 코드에 하드코딩하지 말고 환경 변수로 주입해 주세요.
-- 레퍼런스 스크립트의 하드코딩 키는 프로젝트 설명용 예시일 뿐 실제 배포 코드에서는 제거해야 합니다.
+### 🏗️ 아키텍처 문서
+- **[📋 전체 문서 가이드](documents/README.md)**: 모든 아키텍처 문서 목록
+- **[🎨 디자인 패턴](documents/design_patterns.md)**: 적용된 16가지 디자인 패턴
+- **[🏛️ 아키텍처 개요](documents/architecture_overview.md)**: 시스템 전체 구조
+- **[📊 API 문서](documents/api_documentation.md)**: 상세 API 명세
 
-## License
-This project is provided as-is for reference and prototyping.
+### 📐 다이어그램
+- **[🌐 컨텍스트 다이어그램](documents/context_diagram.md)**: 시스템 경계
+- **[🔗 컴포넌트 & 커넥터 뷰](documents/component_connector_view.md)**: 런타임 구조
+- **[📦 모듈 뷰](documents/module_view.md)**: 정적 코드 구조
+- **[🚀 배포 뷰](documents/deployment_view.md)**: 인프라 구성
+
+## 🛡️ 보안 및 모범 사례
+
+### 보안 체크리스트
+- ✅ **환경 변수**: API 키를 코드에 하드코딩하지 않음
+- ✅ **입력 검증**: 모든 사용자 입력에 대한 검증 적용
+- ✅ **출력 필터링**: 민감한 정보 자동 제거
+- ✅ **로깅**: 구조화된 로그로 보안 이벤트 추적
+- ✅ **HTTPS**: 프로덕션에서 TLS/SSL 사용
+
+### 성능 최적화
+- **스트리밍**: 실시간 응답으로 사용자 경험 향상
+- **캐싱**: 자주 사용되는 결과 캐싱
+- **비동기 처리**: 동시 요청 처리 능력 향상
+- **리소스 관리**: 메모리 효율적인 데이터 처리
+
+## 🤝 기여 및 지원
+
+### 개발 환경 설정
+```bash
+# 개발 의존성 설치
+pip install -r requirements-dev.txt
+
+# 코드 품질 검사
+flake8 agents/
+black agents/
+mypy agents/
+
+# 테스트 실행
+pytest tests/
+```
+
+### 라이선스
+이 프로젝트는 참조 및 프로토타이핑 목적으로 제공됩니다.
 
 
